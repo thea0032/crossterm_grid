@@ -199,10 +199,12 @@ impl ChunkProcess {
             result.push(Action::MoveTo(start_x, i));
             result.push(Action::Print(&self.example_str));
         }
+        // Prints negative lines
         for (i, line) in self.minus.iter().rev().enumerate() {
             result.push(Action::MoveTo(start_x, start_y + i));
             result.push(Action::Print(&line.0));
         }
+        // Prints positive lines
         for (i, line) in self.plus.iter().enumerate() {
             result.push(Action::MoveTo(start_x, divider + i));
             result.push(Action::Print(&line.0));
@@ -214,6 +216,7 @@ impl ChunkProcess {
         }
         result
     }
+    /// Prints using a handler. 
     pub fn print<H: Handler>(&mut self, handler: &mut H, out: &mut H::OutputDevice) -> Result<(), H::Error> {
         let actions = self.grab_actions();
         for line in actions {
