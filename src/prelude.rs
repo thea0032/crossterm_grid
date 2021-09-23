@@ -8,3 +8,7 @@ pub use crate::process::FormatError;
 pub use crate::process::ChunkProcess;
 pub use crate::process::TrimStrategy;
 pub use crate::out::Action;
+pub use crate::out::Handler;
+
+#[cfg(feature = "crossterm-support")]
+pub use crate::crossterm::CrosstermHandler;

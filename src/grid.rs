@@ -61,21 +61,25 @@ impl GridStrategy {
     }
     /// Applies a grid strategy. This is meant to be indirectly called. 
     fn apply_grid_strategy(&self, grid: &mut Grid) -> Option<Chunk> {
-        if grid.start_x == grid.end_x || grid.start_y == grid.end_y {
+        if grid.start_x == grid.end_x || grid.start_y == grid.end_y { 
+            // no space left
             return None;
         }
         if let Some(val) = self.min_size_y {
+            // below minimum size
             if grid.end_y <= grid.start_y + val {
                 return None;
             }
         }
         if let Some(val) = self.min_size_x {
+            // below minimum size
             if grid.end_x <= grid.start_x + val {
                 return None;
             }
         }
         match &self.max_size {
             Maximum::None => {
+                // Takes up the entire grid
                 let return_value = Some(Chunk {
                     start_x: grid.start_x,
                     start_y: grid.start_y,
@@ -90,6 +94,7 @@ impl GridStrategy {
                 let size = *size;
                 let size = size.min(grid.end_x - grid.start_x);
                 if matches!(alignment, Alignment::Minus) {
+                    // Takes up the entire grid, up to the maximum size from the left. 
                     let return_value = Some(Chunk {
                         start_x: grid.start_x,
                         start_y: grid.start_y,
@@ -99,6 +104,7 @@ impl GridStrategy {
                     grid.start_x += size;
                     return_value
                 } else {
+                    // Takes up the entire grid, up to the maximum size from the right. 
                     let return_value = Some(Chunk {
                         start_x: grid.end_x - size,
                         start_y: grid.start_y,
@@ -113,6 +119,7 @@ impl GridStrategy {
                 let size = *size;
                 let size = size.min(grid.end_y - grid.start_y);
                 if matches!(alignment, Alignment::Minus) {
+                    // Takes up the entire grid, up to the maximum size from the top. 
                     let return_value = Some(Chunk {
                         start_x: grid.start_x,
                         start_y: grid.start_y,
@@ -122,6 +129,7 @@ impl GridStrategy {
                     grid.start_y += size;
                     return_value
                 } else {
+                    // Takes up the entire grid, up to the maximum size from the bottom. 
                     let return_value = Some(Chunk {
                         start_x: grid.start_x,
                         start_y: grid.end_y - size,

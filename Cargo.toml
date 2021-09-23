@@ -3,7 +3,13 @@ name = "ui_utils"
 version = "0.1.0"
 authors = ["Thea <theah0032@gmail.com>"]
 edition = "2018"
-description = ""
+keywords = ["CLI", "terminal", "output"]
+categories = ["command-line-interface", "command-line-utilities"]
+description = "A Rust library for building a terminal-based UI with multiple elements, without hassle."
+repository = "https://github.com/thea0032/grid_ui"
+readme = "README.md"
+license = "GNU GPLv3"
+documentation = "TBA"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

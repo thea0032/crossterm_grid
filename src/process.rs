@@ -38,6 +38,7 @@ pub struct ChunkProcess {
     divider: usize,
     minus: Vec<TrimmedText>,
     plus: Vec<TrimmedText>,
+    example_str: String,
 }
 impl ChunkProcess {
     /// Creates a new chunk process. 
@@ -48,20 +49,23 @@ impl ChunkProcess {
         end_x: val.end_x(),
         end_y: val.end_y(),
         divider: match strategy {
-            DividerStrategy::Beginning => val.start_y(),
-            DividerStrategy::End => val.end_y(),
-            DividerStrategy::Halfway => (val.start_y() + val.end_y()) / 2,
-            DividerStrategy::Pos(v) => val.start_y() + v,
+            DividerStrategy::Beginning => 0,
+            DividerStrategy::End => val.end_y() - val.start_y(),
+            DividerStrategy::Halfway => (val.end_y() - val.start_y()) / 2,
+            DividerStrategy::Pos(v) => v,
         },
         minus: Vec::new(),
         plus: Vec::new(),
+        example_str: " ".chars().cycle().take(val.end_x() - val.start_x()).collect()
         }
     }
     /// Trims a string using a trim strategy. 
     fn trim(&self, s: String, b: TrimStrategy, a: Alignment) -> Result<TrimResult, InternalFormatError> {
         match b {
             TrimStrategy::Cut => {
+                // Adds blank space to make sure that the entire length is spanned and no text from the previous frame remains 
                 let blank_space = " ".graphemes(true).cycle();
+                // Any extra text above the length specified is gone.
                 let i = s.graphemes(true).chain(blank_space).take(self.end_x - self.start_x);
                 Ok(TrimResult::Text(TrimmedText(i.collect())))
             },
@@ -69,32 +73,42 @@ impl ChunkProcess {
                 let mut v = s.graphemes(true).collect::<Vec<_>>();
                 if v.is_empty() {
                     v.push(" ");
-                }
+                } // An empty string won't create a line break unless we do this. 
+                // Stores the previous value
                 let mut storage: &[&str] = &[];
+                // The trimmed text result 
                 let mut res: Vec<TrimmedText> = Vec::new();
-                for line in v.chunks(self.end_x - self.start_x) {
+                for line in v.chunks(self.end_x - self.start_x) { 
+                    // each line, except for the last one, extends the entire chunk. We only need to add extra blank space on the next one. 
+                    // As long as there's an item after, we don't need to extend the line with blank space.  
                     if storage.len() != 0 {
                         res.push(TrimmedText(storage.iter().copied().collect::<String>()));
                     }
                     storage = line;
                 }
+                // Creates a cycle of blank space to extend the line with until the end of the chunk (to make sure no extra text from the chunk stays). 
                 let blank_space = " ".graphemes(true).cycle();
+                // Adds a TrimmedText value of exactly the right visual length. 
                 res.push(TrimmedText(storage.iter().copied().chain(blank_space).take(self.end_x - self.start_x).collect::<String>()));
                 if matches!(a, Alignment::Minus) {
+                    // Reverses the direction if we're in the minus direction. 
                     res.reverse();
                 }
                 Ok(TrimResult::WrapText(res))
             },
             TrimStrategy::Ignore => {
+                // DANGEROUS: Just passes the string into TrimmedText. This is bad if it doesn't fit - it could interfere with the other box. 
                 Ok(TrimResult::Text(TrimmedText(s)))
             },
         }
     }
+    /// Converts an internal error (uses private types) into a normal error (uses public types). 
     fn convert_errors(&self, val: InternalFormatError) -> FormatError {
         match val {
             InternalFormatError::NoSpace(v) => FormatError::NoSpace(v.0),
         }
     }
+    /// Converts an internal error (uses private types) into a normal error (uses public types) and adds unprocessed text back. 
     fn convert_supplemented(&self, val: InternalFormatError, supplement: Vec<TrimmedText>, a: Alignment) -> FormatError {
         match val {
             InternalFormatError::NoSpace(v) => {
@@ -129,26 +143,28 @@ impl ChunkProcess {
         let text = self.trim(text, strategy, section).map_err(|x| self.convert_errors(x))?;
         match text {
             TrimResult::WrapText(v) => {
-                //println!("{:?}", v);
                 let mut i = v.into_iter();
                 let v: InternalFormatError = loop {
-                    //println!("IN LOOP");
-                    if let Some(val) = i.next() {
-                        //println!("{:?}", val);
-                        if let Err(e) = self.add_to_section_trimmed(val, section) {
-                            //println!("{:?}", e);
+                    if let Some(val) = i.next() { 
+                        // If there's more trimmed text...
+                        if let Err(e) = self.add_to_section_trimmed(val, section) { 
+                            // Adds it to the section. If an error occurs, break out of the loop. 
                             break e;
                         }
                     } else {
+                        // If we successfully made it through, we're ok. 
                         return Ok(());
                     }
                 };
+                // There's still stuff that we haven't processed. 
                 let extras = i.collect::<Vec<_>>();
+                // Converts the error. 
                 Err(self.convert_supplemented(v, extras, section))
             },
             TrimResult::Text(v) => self.add_to_section_trimmed(v, section).map_err(|e| self.convert_errors(e)),
         }
     }
+    /// Adds trimmed text to a section. 
     fn add_to_section_trimmed(&mut self, text: TrimmedText, section: Alignment) -> Result<(), InternalFormatError> {
         if matches!(section, Alignment::Minus) {
             let space = self.divider - self.minus.len();
@@ -173,11 +189,16 @@ impl ChunkProcess {
         }
     }
     /// Prints out the chunk. 
-    fn grab_actions<'a>(&'a self) -> Vec<Action<'a>> {
+    fn grab_actions<'a>(&'a mut self) -> Vec<Action<'a>> {
         let mut result = Vec::new();
         let start_x = self.start_x;
         let start_y = self.divider - self.minus.len();
         let divider = self.divider;
+        // Prints blank lines, making sure that the entirety of grid is clear. 
+        for i in self.start_y..start_y {
+            result.push(Action::MoveTo(start_x, i));
+            result.push(Action::Print(&self.example_str));
+        }
         for (i, line) in self.minus.iter().rev().enumerate() {
             result.push(Action::MoveTo(start_x, start_y + i));
             result.push(Action::Print(&line.0));
@@ -186,9 +207,14 @@ impl ChunkProcess {
             result.push(Action::MoveTo(start_x, divider + i));
             result.push(Action::Print(&line.0));
         }
+        // Prints blank lines, making sure that the entirety of grid is clear. 
+        for i in self.start_y + self.divider + self.plus.len()..self.end_y {
+            result.push(Action::MoveTo(start_x, i));
+            result.push(Action::Print(&self.example_str));
+        }
         result
     }
-    pub fn print<H: Handler>(&self, handler: &mut H, out: &mut H::OutputDevice) -> Result<(), H::Error> {
+    pub fn print<H: Handler>(&mut self, handler: &mut H, out: &mut H::OutputDevice) -> Result<(), H::Error> {
         let actions = self.grab_actions();
         for line in actions {
             handler.handle(out, &line)?;

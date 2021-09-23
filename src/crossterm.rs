@@ -4,10 +4,12 @@ use crate::out::{Action, Handler};
 
 use crossterm::{cursor::MoveTo, queue, style::Print};
 
-struct CrosstermHandler;
+pub struct CrosstermHandler;
+
 impl Handler for CrosstermHandler {
     type OutputDevice = Stdout;
     type Error = crossterm::ErrorKind;
+    /// A basic wrapper for crossterm
     fn handle(&mut self, out: &mut Self::OutputDevice, input: &Action) -> Result<(), Self::Error> {
         match input {
             Action::Print(v) => {
