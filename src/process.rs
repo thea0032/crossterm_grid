@@ -1,8 +1,6 @@
-use std::io::Stdout;
-
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::grid::{Alignment, DividerStrategy, Chunk};
+use crate::{grid::{Alignment, DividerStrategy, Chunk}, out::{Action, Handler}};
 
 #[derive(Debug)]
 /// Represents a formatting problem. Currently, the only problem that can occur is a lack of space. 
@@ -175,16 +173,25 @@ impl ChunkProcess {
         }
     }
     /// Prints out the chunk. 
-    pub fn print(&self, out: &mut Stdout) -> crossterm::Result<()>{
+    fn grab_actions<'a>(&'a self) -> Vec<Action<'a>> {
+        let mut result = Vec::new();
         let start_x = self.start_x;
         let start_y = self.divider - self.minus.len();
         let divider = self.divider;
-        let v = &self.minus;
-        for (i, line) in v.into_iter().rev().enumerate() {
-            crossterm::queue!(out, crossterm::cursor::MoveTo((start_x) as u16, (start_y + i) as u16), crossterm::style::Print(&line.0))?;
+        for (i, line) in self.minus.iter().rev().enumerate() {
+            result.push(Action::MoveTo(start_x, start_y + i));
+            result.push(Action::Print(&line.0));
         }
-        for (i, line) in (&self.plus).into_iter().enumerate() {
-            crossterm::queue!(out, crossterm::cursor::MoveTo((start_x) as u16, (divider + i) as u16), crossterm::style::Print(&line.0))?;
+        for (i, line) in self.plus.iter().enumerate() {
+            result.push(Action::MoveTo(start_x, divider + i));
+            result.push(Action::Print(&line.0));
+        }
+        result
+    }
+    pub fn print<H: Handler>(&self, handler: &mut H, out: &mut H::OutputDevice) -> Result<(), H::Error> {
+        let actions = self.grab_actions();
+        for line in actions {
+            handler.handle(out, &line)?;
         }
         Ok(())
     }

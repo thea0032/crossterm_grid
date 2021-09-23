@@ -7,3 +7,4 @@ pub use crate::grid::GridStrategy;
 pub use crate::process::FormatError;
 pub use crate::process::ChunkProcess;
 pub use crate::process::TrimStrategy;
+pub use crate::out::Action;
