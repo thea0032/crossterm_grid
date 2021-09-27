@@ -1,13 +1,15 @@
 use crate::process::ChunkProcess;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Whether the alignment is in the negative direction [up/left] or in the positive direction [down/right].
 /// Alignments will have different behaviors depending on where they're used.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Alignment {
     Minus,
     Plus,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 enum Maximum {
     None,
     X(usize, Alignment),
@@ -18,8 +20,22 @@ impl Default for Maximum {
         Maximum::None
     }
 }
-/// Inputting this to a grid will give a GridData based on the specifications used in the function.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Default, Hash)]
+/// Inputting this to a grid will give a GridData based on the specifications used in the function.
+/// # Examples
+/// Creating a grid
+/// ``` rust
+/// # use ui_utils::out;
+/// # use ui_utils::trim::Ignore;
+/// # use ui_utils::grid::*;
+/// # fn main() -> Result<(), ()>{
+/// let mut grid = Grid::new(0, 0, 10, 10);
+/// let chunk = grid.apply_strategy(&GridStrategy::new());
+/// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+/// # Ok(())
+/// # }
+/// ```
 pub struct GridStrategy {
     min_size_x: Option<usize>,
     min_size_y: Option<usize>,
@@ -27,6 +43,19 @@ pub struct GridStrategy {
 }
 impl GridStrategy {
     /// Creates an empty grid strategy. Empty grid strategies will simply take up the entire grid.
+    /// # Examples
+    /// The default grid:
+    /// ``` rust
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # use ui_utils::grid::*;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = Grid::new(0, 0, 10, 10);
+    /// let chunk = grid.apply_strategy(&GridStrategy::new());
+    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn new() -> GridStrategy {
         GridStrategy {
             min_size_x: None,
@@ -35,8 +64,33 @@ impl GridStrategy {
         }
     }
     /// Sets a maximum X value. The resulting grid data will only be of length v.
-    /// It'll be either on the left or the right, depending on the alignment.
+    /// It'll be either on the left or the right, depending on the alignment (left = minus).
     /// Only one maximum direction can be set. Otherwise, this function will panic.
+    /// # Examples
+    /// Applying a grid with a maximum x value
+    /// ``` rust
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # use ui_utils::grid::*;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = Grid::new(0, 0, 10, 10);
+    /// let chunk = grid.apply_strategy(&GridStrategy::new().max_x(5, Alignment::Minus));
+    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 5, end_y: 10}));
+    /// let chunk = grid.apply_strategy(&GridStrategy::new().max_x(2, Alignment::Plus));
+    /// assert_eq!(chunk, Some(Chunk {start_x: 8, start_y: 0, end_x: 10, end_y: 10}));
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// Cannot set both max x and max y 
+    /// ```should_panic
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # use ui_utils::grid::*;
+    /// # fn main() -> Result<(), ()>{
+    /// let cannot_set_both_x_and_y = GridStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn max_x(mut self, v: usize, a: Alignment) -> Self {
         if matches!(self.max_size, Maximum::None) {
             self.max_size = Maximum::X(v, a);
@@ -46,8 +100,33 @@ impl GridStrategy {
         }
     }
     /// Sets a maximum Y value. The resulting grid data will only be of height v.
-    /// It'll be either on the top or the bottom, depending on the alignment.
+    /// It'll be either on the top or the bottom, depending on the alignment (top = minus).
     /// Only one maximum direction can be set. Otherwise, this function will panic.
+    /// # Examples
+    /// Applying a grid with a maximum x value
+    /// ``` rust
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # use ui_utils::grid::*;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = Grid::new(0, 0, 10, 10);
+    /// let chunk = grid.apply_strategy(&GridStrategy::new().max_y(5, Alignment::Minus));
+    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 10, end_y: 5}));
+    /// let chunk = grid.apply_strategy(&GridStrategy::new().max_y(2, Alignment::Plus));
+    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 8, end_x: 10, end_y: 10}));
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// Cannot set both max x and max y 
+    /// ```should_panic
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # use ui_utils::grid::*;
+    /// # fn main() -> Result<(), ()>{
+    /// let cannot_set_both_x_and_y = GridStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn max_y(mut self, v: usize, a: Alignment) -> Self {
         if matches!(self.max_size, Maximum::None) {
             self.max_size = Maximum::Y(v, a);
@@ -58,16 +137,45 @@ impl GridStrategy {
     }
     /// Sets a minimum X value. If the grid cannot give the grid data this amount of length,
     /// no strategy will be returned.
+    /// # Examples
+    /// ``` rust
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # use ui_utils::grid::*;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = Grid::new(0, 0, 10, 10);
+    /// let chunk = grid.apply_strategy(&GridStrategy::new().min_x(15));
+    /// assert_eq!(chunk, None);
+    /// let chunk = grid.apply_strategy(&GridStrategy::new().min_x(5));
+    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn min_x(mut self, v: usize) -> Self {
         self.min_size_x = Some(v);
         self
     }
     /// Sets a minimum Y value. If the grid cannot give the grid data this amount of height,
     /// no strategy will be returned.
+    /// # Examples
+    /// ``` rust
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # use ui_utils::grid::*;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = Grid::new(0, 0, 10, 10);
+    /// let chunk = grid.apply_strategy(&GridStrategy::new().min_y(15));
+    /// assert_eq!(chunk, None);
+    /// let chunk = grid.apply_strategy(&GridStrategy::new().min_y(5));
+    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn min_y(mut self, v: usize) -> Self {
         self.min_size_y = Some(v);
         self
     }
+    #[doc(hidden)]
     /// Applies a grid strategy. This is meant to be indirectly called.
     fn apply_grid_strategy(&self, grid: &mut Grid) -> Option<Chunk> {
         if grid.start_x == grid.end_x || grid.start_y == grid.end_y {
@@ -152,9 +260,10 @@ impl GridStrategy {
         }
     }
 }
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// A grid - basically, a square meant to resemble a terminal. Chunks can be "bitten off" into GridData.
 /// This reserves a chunk of the terminal to only be written on a certain space.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Grid {
     orig: Chunk,
     start_x: usize,
@@ -205,42 +314,30 @@ impl Grid {
         }
     }
 }
-/// A chunk of the terminal, represented by starting and ending variables.
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Chunk {
-    pub start_x: usize,
-    pub start_y: usize,
-    pub end_x: usize,
-    pub end_y: usize,
-}
 /// Where the divider will be placed. The divider is between two sides: A plus side and a minus side.
 /// Content can be added on the plus or minus side if there's space available.
-/// Plus - Content start at the divider and go down as long as there's space.
-/// Minus - Content start at the divider and go up as long as there's space.
-/// NOTE: Content that is multiple lines long (by wraparound or manually) will have the last lines below the first lines.
-/// EG:
-/// Minus Message 2 part 1
-/// Minus Message 2 part 2
-/// Minus Message 1 part 1
-/// Minus Message 1 part 2
-/// ----- DIVIDER ---- {The divider is not shown and is only included here to make things more obvious}
-/// Plus Message 1 part 1
-/// Plus Message 1 part 2
-/// Plus Message 2 part 1
-/// Plus Message 2 part 2
-/// DividerStrategy::Beginning: There is no room for negative alignment messages. All positive ones begin at the top.
-/// DividerStrategy::End: There is no room for positive alignment messages. All negative ones begin at the bottom.
-/// DividerStrategy::Pos(v): There is v room for negative alignment messages and (size of chunk - v) room for positive alignment messages.
-/// DividerStrategy::Halfway: Self-explanatory.   
+/// For examples of divider behavior, see docs for ChunkProcess.
 pub enum DividerStrategy {
     Beginning,
     End,
     Halfway,
     Pos(usize),
 }
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// A square chunk of the terminal. This is represented by
+pub struct Chunk {
+    pub start_x: usize,
+    pub start_y: usize,
+    pub end_x: usize,
+    pub end_y: usize,
+}
 impl Chunk {
     /// Converts the chunk into a process. A process can have text added to it, and it can be printed.
-    pub fn into_process(&self, strategy: DividerStrategy) -> ChunkProcess {
+    pub fn to_process(&self, strategy: DividerStrategy) -> ChunkProcess {
         ChunkProcess::new(self, strategy)
     }
     pub(crate) fn start_x(&self) -> usize {

@@ -8,7 +8,7 @@ categories = ["command-line-interface", "command-line-utilities"]
 description = "A Rust library for building a terminal-based UI with multiple elements, without hassle."
 repository = "https://github.com/thea0032/grid_ui"
 readme = "README.md"
-license = "GNU GPLv3"
+license = "MIT"
 documentation = "TBA"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -18,5 +18,4 @@ unicode-segmentation = "1.8.0"
 
 crossterm = {version = "0.21.0", optional = true}
 
-[features]
-crossterm-support = ["crossterm"]
+serde = { version = "1.0", optional = true, features = ["derive"] }

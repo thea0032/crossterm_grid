@@ -1,38 +1,9 @@
-use unicode_segmentation::UnicodeSegmentation;
+use crate::{FormatError, TrimStrategy, grid::{Alignment, Chunk, DividerStrategy}, out::{Action, Handler, SafeHandler}, trim::{TrimmedText}};
 
-use crate::{
-    grid::{Alignment, Chunk, DividerStrategy},
-    out::{Action, Handler},
-};
-
-/// Represents a formatting problem. Currently, the only problem that can occur is a lack of space.
-/// Your string is given back.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum FormatError {
-    NoSpace(String),
-}
 
 enum InternalFormatError {
     NoSpace(TrimmedText),
 }
-
-/// Determines how text too big to fit is handled.
-/// TrimStrategy::Cut truncates the value, removing any text that doesn't fit.
-/// TrimStrategy::Split moves all extra text to extra lines.
-/// TrimStrategy::Ignore ignores this, although you can't guarantee that other regions of the terminal will remain untouched.
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum TrimStrategy {
-    Cut,
-    Split,
-    Ignore,
-}
-enum TrimResult {
-    WrapText(Vec<TrimmedText>),
-    Text(TrimmedText),
-}
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct TrimmedText(String);
 /// A structure that can display text inside a chunk.  
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ChunkProcess {
@@ -64,83 +35,163 @@ impl ChunkProcess {
             example_str: " ".chars().cycle().take(val.end_x() - val.start_x()).collect(),
         }
     }
+    /// Gets the chunk's width - the number of characters that can be displayed on a line. 
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// assert_eq!(process.width(), 70);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn width(&self) -> usize {
+        self.end_x - self.start_x
+    }
+    /// Gets the chunk's height - the number of lines that can fit in it. 
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// assert_eq!(process.height(), 70);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn height(&self) -> usize {
+        self.end_y - self.start_y
+    }
+    /// Gets the x position where the process begins. 
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// assert_eq!(process.start_x(), 30);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn start_x(&self) -> usize {self.start_x}
+    
+    /// Gets the y position where the process begins. 
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// assert_eq!(process.start_y(), 30);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn start_y(&self) -> usize {self.start_y}
+    
+    /// Gets the x position where the process ends.  
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// assert_eq!(process.end_x(), 100);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn end_x(&self) -> usize {self.end_x}
+    
+    /// Gets the y position where the process ends.  
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// assert_eq!(process.end_y(), 100);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn end_y(&self) -> usize {self.end_y}
+    #[doc(hidden)]
     /// Trims a string using a trim strategy.
-    fn trim(&self, s: String, b: TrimStrategy, a: Alignment) -> Result<TrimResult, InternalFormatError> {
-        match b {
-            TrimStrategy::Cut => {
-                // Adds blank space to make sure that the entire length is spanned and no text from the previous frame remains
-                let blank_space = " ".graphemes(true).cycle();
-                // Any extra text above the length specified is gone.
-                let i = s.graphemes(true).chain(blank_space).take(self.end_x - self.start_x);
-                Ok(TrimResult::Text(TrimmedText(i.collect())))
-            }
-            TrimStrategy::Split => {
-                let mut v = s.graphemes(true).collect::<Vec<_>>();
-                if v.is_empty() {
-                    v.push(" ");
-                } // An empty string won't create a line break unless we do this.
-                  // Stores the previous value
-                let mut storage: &[&str] = &[];
-                // The trimmed text result
-                let mut res: Vec<TrimmedText> = Vec::new();
-                for line in v.chunks(self.end_x - self.start_x) {
-                    // each line, except for the last one, extends the entire chunk. We only need to add extra blank space on the next one.
-                    // As long as there's an item after, we don't need to extend the line with blank space.
-                    if storage.len() != 0 {
-                        res.push(TrimmedText(storage.iter().copied().collect::<String>()));
-                    }
-                    storage = line;
-                }
-                // Creates a cycle of blank space to extend the line with until the end of the chunk (to make sure no extra text from the chunk stays).
-                let blank_space = " ".graphemes(true).cycle();
-                // Adds a TrimmedText value of exactly the right visual length.
-                res.push(TrimmedText(
-                    storage
-                        .iter()
-                        .copied()
-                        .chain(blank_space)
-                        .take(self.end_x - self.start_x)
-                        .collect::<String>(),
-                ));
-                if matches!(a, Alignment::Minus) {
-                    // Reverses the direction if we're in the minus direction.
-                    res.reverse();
-                }
-                Ok(TrimResult::WrapText(res))
-            }
-            TrimStrategy::Ignore => {
-                // DANGEROUS: Just passes the string into TrimmedText. This is bad if it doesn't fit - it could interfere with the other box.
-                Ok(TrimResult::Text(TrimmedText(s)))
-            }
-        }
-    }
-    /// Converts an internal error (uses private types) into a normal error (uses public types).
-    fn convert_errors(&self, val: InternalFormatError) -> FormatError {
-        match val {
-            InternalFormatError::NoSpace(v) => FormatError::NoSpace(v.0),
-        }
-    }
-    /// Converts an internal error (uses private types) into a normal error (uses public types) and adds unprocessed text back.
-    fn convert_supplemented(&self, val: InternalFormatError, supplement: Vec<TrimmedText>, a: Alignment) -> FormatError {
-        match val {
-            InternalFormatError::NoSpace(v) => {
-                let mut s: String = v.0;
-                for line in supplement {
-                    if matches!(a, Alignment::Minus) {
-                        let mut line = line.0;
-                        line.push_str(&s);
-                        s = line;
-                    } else {
-                        s.push_str(&line.0);
-                    }
-                }
-                FormatError::NoSpace(s)
-            }
-        }
+    fn trim<T: TrimStrategy>(&self, text: T::Input, b: &mut T, a: Alignment) -> Vec<TrimmedText> {
+        b.trim(text, self, a)
     }
     /// Adds multi-line content to the selection, using the inputted strategy inside the inputted alignment. Returns everything that can't fit.
-    /// Note that the multi-line content goes top to bottom, even if Alignment::Minus is selected
-    pub fn add_to_section_lines(&mut self, mut text: Vec<String>, strategy: TrimStrategy, section: Alignment) -> Vec<Result<(), FormatError>> {
+    /// Note that the multi-line content goes top to bottom, even if Alignment::Minus is selected. 
+    /// This is the exact opposite behavior of simply sending multiple lines. 
+    /// # Errors
+    /// Each position represents the corresponding position of the text input. An error will be found if the call to add_to_section() returns an error. 
+    /// # Examples 
+    /// Usage in positive direction
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// process.add_to_section_lines(vec!["Some stuff".to_string(), "More stuff".to_string()], &mut Ignore, grid::Alignment::Plus);
+    /// let mut output: String = String::new();
+    /// process.print(&mut out::OutToString, &mut output)?;
+    /// assert_eq!("Some stuff\nMore stuff\n          \n".to_string(), output);
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// Usage in negative direction
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::End);
+    /// process.add_to_section_lines(vec!["Some stuff".to_string(), "More stuff".to_string()], &mut Ignore, grid::Alignment::Minus);
+    /// let mut output: String = String::new();
+    /// process.print(&mut out::OutToString, &mut output)?;
+    /// assert_eq!("          \nSome stuff\nMore stuff\n".to_string(), output);
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// Errors in positive direction
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 10, 2);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let result = process.add_to_section_lines(vec!["Some stuff".to_string(), "More stuff".to_string(), "Even more!".to_string()], &mut Ignore, grid::Alignment::Plus);
+    /// let mut output: String = String::new();
+    /// process.print(&mut out::OutToString, &mut output)?;
+    /// assert_eq!("Some stuff\nMore stuff\n".to_string(), output);
+    /// assert!(result[2].is_err());
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// Errors in negative direction
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 10, 2);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::End);
+    /// let result = process.add_to_section_lines(vec!["Some stuff".to_string(), "More stuff".to_string(), "Even more!".to_string()], &mut Ignore, grid::Alignment::Minus);
+    /// let mut output: String = String::new();
+    /// process.print(&mut out::OutToString, &mut output)?;
+    /// assert_eq!("More stuff\nEven more!\n".to_string(), output);
+    /// assert!(result[0].is_err());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn add_to_section_lines<T: TrimStrategy>(&mut self, mut text: Vec<T::Input>, strategy: &mut T, section: Alignment) -> Vec<Result<(), FormatError<T>>> {
         if matches!(section, Alignment::Minus) {
             text.reverse();
         }
@@ -152,32 +203,98 @@ impl ChunkProcess {
         }
         res
     }
-    /// Adds single-line content to the selection, using the inputted strategy inside the inputted alignment. Returns if it can't fit.
-    pub fn add_to_section(&mut self, text: String, strategy: TrimStrategy, section: Alignment) -> Result<(), FormatError> {
-        let text = self.trim(text, strategy, section).map_err(|x| self.convert_errors(x))?;
-        match text {
-            TrimResult::WrapText(v) => {
-                let mut i = v.into_iter();
-                let v: InternalFormatError = loop {
-                    if let Some(val) = i.next() {
-                        // If there's more trimmed text...
-                        if let Err(e) = self.add_to_section_trimmed(val, section) {
-                            // Adds it to the section. If an error occurs, break out of the loop.
-                            break e;
-                        }
-                    } else {
-                        // If we successfully made it through, we're ok.
-                        return Ok(());
-                    }
-                };
-                // There's still stuff that we haven't processed.
-                let extras = i.collect::<Vec<_>>();
-                // Converts the error.
-                Err(self.convert_supplemented(v, extras, section))
+    /// Adds single-line content to the selection, using the inputted strategy inside the inputted alignment. 
+    /// # Errors
+    /// This method will return an error if the text won't fit. The text will be returned (although it might be trimmed from trim methods.)
+    /// # Examples
+    /// Basic printing:
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+    /// let mut output: String = String::new();
+    /// process.print(&mut out::OutToString, &mut output)?;
+    /// assert_eq!("Some stuff\n          \n          \n".to_string(), output);
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// How order works
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+    /// process.add_to_section("More stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+    /// let mut output: String = String::new();
+    /// process.print(&mut out::OutToString, &mut output)?;
+    /// assert_eq!("Some stuff\nMore stuff\n          \n".to_string(), output);
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// Running out of space: 
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 10, 1); // creates a grid with one line
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?; 
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning); 
+    /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus); 
+    /// assert!(process.add_to_section("No more".to_string(), &mut Ignore, grid::Alignment::Plus).is_err()); 
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// Plan your divider strategy
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 100, 100);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// assert!(process.add_to_section(
+    ///     "The divider is at the beginning! There's no room for negatively aligned text!"
+    ///     .to_string(),
+    ///     &mut Ignore, grid::Alignment::Minus).is_err());
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn add_to_section<T: TrimStrategy>(&mut self, text: T::Input, strategy: &mut T, section: Alignment) -> Result<(), FormatError<T>> {
+        let text = self.trim(text, strategy, section);
+        let mut i = text.into_iter();
+        let error: InternalFormatError = loop {
+            if let Some(val) = i.next() {
+                // If there's more trimmed text...
+                if let Err(e) = self.add_to_section_trimmed(val, section) {
+                    // Adds it to the section. If an error occurs, break out of the loop.
+                    break e;
+                }
+            } else {
+                // If we successfully made it through, we're ok.
+                return Ok(());
             }
-            TrimResult::Text(v) => self.add_to_section_trimmed(v, section).map_err(|e| self.convert_errors(e)),
+        };
+        match error {
+            InternalFormatError::NoSpace(back) => {
+                // Adds the text that couldn't be formatted back onto the start and collects them all. 
+                let extras = Some(back).into_iter().chain(i).collect::<Vec<_>>(); 
+                // Adds the error.
+                Err(FormatError::NoSpace(strategy.back(extras, &self, section)))
+            },
         }
     }
+    #[doc(hidden)]
     /// Adds trimmed text to a section.
     fn add_to_section_trimmed(&mut self, text: TrimmedText, section: Alignment) -> Result<(), InternalFormatError> {
         if matches!(section, Alignment::Minus) {
@@ -195,47 +312,119 @@ impl ChunkProcess {
         }
         Ok(())
     }
+    #[doc(hidden)]
     /// Shoves the data in the positive or negative direction, changing the divider to make more space available on one side.
+    /// Moving text to the bottom or top:
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 10, 4);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Halfway);
+    /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+    /// process.add_to_section("More stuff".to_string(), &mut Ignore, grid::Alignment::Minus);
+    /// let mut output: String = String::new();
+    /// process.print(&mut out::OutToString, &mut output)?;
+    /// assert_eq!("          \nMore stuff\nSome stuff\n          \n".to_string(), output);
+    /// process.shove(grid::Alignment::Minus);
+    /// let mut output: String = String::new();
+    /// process.print(&mut out::OutToString, &mut output)?;
+    /// assert_eq!("More stuff\nSome stuff\n          \n          \n".to_string(), output);
+    /// assert!(process.add_to_section("No room left".to_string(), &mut Ignore, grid::Alignment::Minus).is_err());
+    /// process.shove(grid::Alignment::Plus);
+    /// process.add_to_section("More room!".to_string(), &mut Ignore, grid::Alignment::Minus);
+    /// let mut output: String = String::new();
+    /// process.print(&mut out::OutToString, &mut output)?;
+    /// assert_eq!("          \nMore room!\nMore stuff\nSome stuff\n".to_string(), output);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn shove(&mut self, direction: Alignment) {
         match direction {
             Alignment::Minus => self.divider = self.divider.min(self.minus.len()),
-            Alignment::Plus => self.divider = self.divider.max(self.end_y - self.start_y + self.plus.len()),
+            Alignment::Plus => self.divider = self.divider.max(self.end_y - self.start_y - self.plus.len()),
         }
     }
-    /// Prints out the chunk.
-    fn grab_actions<'a>(&'a mut self) -> Vec<Action<'a>> {
+    #[doc(hidden)]
+    /// Transforms the board into actions. 
+    fn grab_actions(&mut self) -> Vec<Action> {
         let mut result = Vec::new();
         let start_x = self.start_x;
         let start_y = self.divider - self.minus.len();
         let divider = self.divider;
-        // Prints blank lines, making sure that the entirety of grid is clear.
+        // Adds blank lines, making sure that the entirety of grid is clear.
         for i in self.start_y..start_y {
             result.push(Action::MoveTo(start_x, i));
             result.push(Action::Print(&self.example_str));
         }
-        // Prints negative lines
+        // Adds negative lines
         for (i, line) in self.minus.iter().rev().enumerate() {
             result.push(Action::MoveTo(start_x, start_y + i));
             result.push(Action::Print(&line.0));
         }
-        // Prints positive lines
+        // Adds positive lines
         for (i, line) in self.plus.iter().enumerate() {
             result.push(Action::MoveTo(start_x, divider + i));
             result.push(Action::Print(&line.0));
         }
-        // Prints blank lines, making sure that the entirety of grid is clear.
+        // Adds blank lines, making sure that the entirety of grid is clear.
         for i in self.start_y + self.divider + self.plus.len()..self.end_y {
             result.push(Action::MoveTo(start_x, i));
             result.push(Action::Print(&self.example_str));
         }
         result
     }
-    /// Prints using a handler.
+    /// Prints out the grid using a handler. 
+    /// # Errors
+    /// Returns an error if the handler returns an error. 
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+    /// let mut output: String = String::new();
+    /// process.print(&mut out::OutToString, &mut output)?;
+    /// assert_eq!("Some stuff\n          \n          \n".to_string(), output);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn print<H: Handler>(&mut self, handler: &mut H, out: &mut H::OutputDevice) -> Result<(), H::Error> {
         let actions = self.grab_actions();
         for line in actions {
             handler.handle(out, &line)?;
         }
         Ok(())
+    }
+    /// Prints safely - this method cannot return an error. 
+    /// # Panics
+    /// This method panics when the handler panics. 
+    /// # Examples
+    /// Safe printing: 
+    /// ``` rust
+    /// # use ui_utils::grid;
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
+    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
+    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+    /// let mut output: String = String::new();
+    /// process.print_safe(&mut out::OutToString, &mut output);
+    /// assert_eq!("Some stuff\n          \n          \n".to_string(), output);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn print_safe<H: SafeHandler>(&mut self, handler: &mut H, out: &mut H::OutputDevice) {
+        let actions = self.grab_actions();
+        for line in actions {
+            handler.safe_handle(out, &line);
+        }
     }
 }

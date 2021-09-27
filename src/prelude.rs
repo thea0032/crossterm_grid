@@ -7,8 +7,8 @@ pub use crate::grid::GridStrategy;
 pub use crate::out::Action;
 pub use crate::out::Handler;
 pub use crate::process::ChunkProcess;
-pub use crate::process::FormatError;
-pub use crate::process::TrimStrategy;
+pub use crate::trim::FormatError;
+pub use crate::trim::TrimStrategy;
 
-#[cfg(feature = "crossterm-support")]
+#[cfg(feature = "crossterm")]
 pub use crate::crossterm::CrosstermHandler;
