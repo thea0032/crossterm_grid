@@ -147,6 +147,8 @@ impl TrimStrategy for Truncate {
 #[derive(Debug)]
 /// This split splits the text into different lines, each of which fit just fine. 
 /// It also adds blank space to any short lines to make sure every bit of blank space is refreshed.
+/// # Panics
+/// Panics if printing to a grid of 0 width. 
 /// # Example
 /// ``` rust
 /// # use ui_utils::grid;

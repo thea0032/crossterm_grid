@@ -8,14 +8,16 @@ pub struct Frame {
     grid: Grid,
 }
 impl Frame {
-    /// Creates a new frame. 
-    /// # Example
-    /// ``` rust
-    /// # use ui_utils::grid::Frame;
-    /// # fn main() {
-    /// let ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
-    /// # }
-    /// ```
+    /**
+    Creates a new frame. 
+    # Example
+    ``` rust
+    # use ui_utils::grid::Frame;
+    # fn main() {
+    let ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
+    # }
+    ```
+    */
     pub fn new(x_min: usize, y_min: usize, x_max: usize, y_max: usize) -> Frame {
         Frame {grid: Grid {
             start_x: x_min,
@@ -24,34 +26,38 @@ impl Frame {
             end_y: y_max,
         }}
     }
-    /// Produces a fresh grid, which contains the entire frame. 
-    /// # Example
-    /// ``` rust
-    /// # use ui_utils::grid::Frame;
-    /// # use ui_utils::grid::Grid;
-    /// # fn main() {
-    /// let ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
-    /// let ten_by_ten_grid: Grid = ten_by_ten.next_frame();
-    /// assert_eq!(ten_by_ten_grid, Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10});
-    /// # }
-    /// ```
+    /**
+    Produces a fresh grid, which contains the entire frame. 
+    # Example
+    ``` rust
+    # use ui_utils::grid::Frame;
+    # use ui_utils::grid::Grid;
+    # fn main() {
+    let ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
+    let ten_by_ten_grid: Grid = ten_by_ten.next_frame();
+    assert_eq!(ten_by_ten_grid, Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10});
+    # }
+    ```
+    */
     pub fn next_frame(&self) -> Grid {
         self.grid.clone()
     }
-    /// Resizes the grid, changing its size. 
-    /// # Example
-    /// ``` rust
-    /// # use ui_utils::grid::Frame;
-    /// # use ui_utils::grid::Grid;
-    /// # fn main() {
-    /// let mut ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
-    /// let ten_by_ten_grid: Grid = ten_by_ten.next_frame();
-    /// assert_eq!(ten_by_ten_grid, Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10});
-    /// ten_by_ten.resize(5, 5, 10, 10);
-    /// let five_by_five_grid: Grid = ten_by_ten.next_frame();
-    /// assert_eq!(five_by_five_grid, Grid {start_x: 5, start_y: 5, end_x: 10, end_y: 10});
-    /// # }
-    /// ```
+    /**
+    Resizes the grid, changing its size. 
+    # Example
+    ``` rust
+    # use ui_utils::grid::Frame;
+    # use ui_utils::grid::Grid;
+    # fn main() {
+    let mut ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
+    let ten_by_ten_grid: Grid = ten_by_ten.next_frame();
+    assert_eq!(ten_by_ten_grid, Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10});
+    ten_by_ten.resize(5, 5, 10, 10);
+    let five_by_five_grid: Grid = ten_by_ten.next_frame();
+    assert_eq!(five_by_five_grid, Grid {start_x: 5, start_y: 5, end_x: 10, end_y: 10});
+    # }
+    ```
+    */
     pub fn resize(&mut self, x_min: usize, y_min: usize, x_max: usize, y_max: usize) {
         self.grid = Grid {
             start_x: x_min,
@@ -83,40 +89,44 @@ impl Default for Maximum {
 }
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Default, Hash)]
-/// Inputting this to a grid will give a GridData based on the specifications used in the function.
-/// # Examples
-/// Creating a grid
-/// ``` rust
-/// # use ui_utils::out;
-/// # use ui_utils::trim::Ignore;
-/// # use ui_utils::grid::*;
-/// # fn main() -> Result<(), ()>{
-    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
-/// let chunk = grid.split(&SplitStrategy::new());
-/// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
-/// # Ok(())
-/// # }
-/// ```
+/**
+Inputting this to a grid will give a GridData based on the specifications used in the function.
+# Examples
+Creating a grid
+``` rust
+# use ui_utils::out;
+# use ui_utils::trim::Ignore;
+# use ui_utils::grid::*;
+# fn main() -> Result<(), ()>{
+let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+let chunk = grid.split(&SplitStrategy::new());
+assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+# Ok(())
+# }
+```
+*/
 pub struct SplitStrategy {
     min_size_x: Option<usize>,
     min_size_y: Option<usize>,
     max_size: Maximum,
 }
 impl SplitStrategy {
-    /// Creates an empty grid strategy. Empty grid strategies will simply take up the entire grid.
-    /// # Examples
-    /// The default grid:
-    /// ``` rust
-    /// # use ui_utils::out;
-    /// # use ui_utils::trim::Ignore;
-    /// # use ui_utils::grid::*;
-    /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
-    /// let chunk = grid.split(&SplitStrategy::new());
-    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
-    /// # Ok(())
-    /// # }
-    /// ```
+    /**
+    Creates an empty grid strategy. Empty grid strategies will simply take up the entire grid.
+    # Examples
+    The default grid:
+    ``` rust
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # use ui_utils::grid::*;
+    # fn main() -> Result<(), ()>{
+    let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    let chunk = grid.split(&SplitStrategy::new());
+    assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+    # Ok(())
+    # }
+    ```
+    */
     pub fn new() -> SplitStrategy {
         SplitStrategy {
             min_size_x: None,
@@ -124,34 +134,36 @@ impl SplitStrategy {
             max_size: Maximum::None,
         }
     }
-    /// Sets a maximum X value. The resulting grid data will only be of length v.
-    /// It'll be either on the left or the right, depending on the alignment (left = minus).
-    /// Only one maximum direction can be set. Otherwise, this function will panic.
-    /// # Examples
-    /// Applying a grid with a maximum x value
-    /// ``` rust
-    /// # use ui_utils::out;
-    /// # use ui_utils::trim::Ignore;
-    /// # use ui_utils::grid::*;
-    /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
-    /// let chunk = grid.split(&SplitStrategy::new().max_x(5, Alignment::Minus));
-    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 5, end_y: 10}));
-    /// let chunk = grid.split(&SplitStrategy::new().max_x(2, Alignment::Plus));
-    /// assert_eq!(chunk, Some(Grid {start_x: 8, start_y: 0, end_x: 10, end_y: 10}));
-    /// # Ok(())
-    /// # }
-    /// ```
-    /// Cannot set both max x and max y 
-    /// ```should_panic
-    /// # use ui_utils::out;
-    /// # use ui_utils::trim::Ignore;
-    /// # use ui_utils::grid::*;
-    /// # fn main() -> Result<(), ()>{
-    /// let cannot_set_both_x_and_y = SplitStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
-    /// # Ok(())
-    /// # }
-    /// ```
+    /**
+    Sets a maximum X value. The resulting grid data will only be of length v.
+    It'll be either on the left or the right, depending on the alignment (left = minus).
+    Only one maximum direction can be set. Otherwise, this function will panic.
+    # Examples
+    Applying a grid with a maximum x value
+    ``` rust
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # use ui_utils::grid::*;
+    # fn main() -> Result<(), ()>{
+    let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    let chunk = grid.split(&SplitStrategy::new().max_x(5, Alignment::Minus));
+    assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 5, end_y: 10}));
+    let chunk = grid.split(&SplitStrategy::new().max_x(2, Alignment::Plus));
+    assert_eq!(chunk, Some(Grid {start_x: 8, start_y: 0, end_x: 10, end_y: 10}));
+    # Ok(())
+    # }
+    ```
+    Cannot set both max x and max y 
+    ```should_panic
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # use ui_utils::grid::*;
+    # fn main() -> Result<(), ()>{
+    let cannot_set_both_x_and_y = SplitStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
+    # Ok(())
+    # }
+    ```
+    */
     pub fn max_x(mut self, v: usize, a: Alignment) -> Self {
         if matches!(self.max_size, Maximum::None) {
             self.max_size = Maximum::X(v, a);
@@ -160,34 +172,36 @@ impl SplitStrategy {
             panic!("A maximum already exists!")
         }
     }
-    /// Sets a maximum Y value. The resulting grid data will only be of height v.
-    /// It'll be either on the top or the bottom, depending on the alignment (top = minus).
-    /// Only one maximum direction can be set. Otherwise, this function will panic.
-    /// # Examples
-    /// Applying a grid with a maximum x value
-    /// ``` rust
-    /// # use ui_utils::out;
-    /// # use ui_utils::trim::Ignore;
-    /// # use ui_utils::grid::*;
-    /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
-    /// let chunk = grid.split(&SplitStrategy::new().max_y(5, Alignment::Minus));
-    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 5}));
-    /// let chunk = grid.split(&SplitStrategy::new().max_y(2, Alignment::Plus));
-    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 8, end_x: 10, end_y: 10}));
-    /// # Ok(())
-    /// # }
-    /// ```
-    /// Cannot set both max x and max y 
-    /// ```should_panic
-    /// # use ui_utils::out;
-    /// # use ui_utils::trim::Ignore;
-    /// # use ui_utils::grid::*;
-    /// # fn main() -> Result<(), ()>{
-    /// let cannot_set_both_x_and_y = SplitStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
-    /// # Ok(())
-    /// # }
-    /// ```
+    /**
+    Sets a maximum Y value. The resulting grid data will only be of height v.
+    It'll be either on the top or the bottom, depending on the alignment (top = minus).
+    Only one maximum direction can be set. Otherwise, this function will panic.
+    # Examples
+    Applying a grid with a maximum x value
+    ``` rust
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # use ui_utils::grid::*;
+    # fn main() -> Result<(), ()>{
+    let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    let chunk = grid.split(&SplitStrategy::new().max_y(5, Alignment::Minus));
+    assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 5}));
+    let chunk = grid.split(&SplitStrategy::new().max_y(2, Alignment::Plus));
+    assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 8, end_x: 10, end_y: 10}));
+    # Ok(())
+    # }
+    ```
+    Cannot set both max x and max y 
+    ```should_panic
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # use ui_utils::grid::*;
+    # fn main() -> Result<(), ()>{
+    let cannot_set_both_x_and_y = SplitStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
+    # Ok(())
+    # }
+    ```
+    */
     pub fn max_y(mut self, v: usize, a: Alignment) -> Self {
         if matches!(self.max_size, Maximum::None) {
             self.max_size = Maximum::Y(v, a);
@@ -196,42 +210,46 @@ impl SplitStrategy {
             panic!("A maximum already exists!")
         }
     }
-    /// Sets a minimum X value. If the grid cannot give the grid data this amount of length,
-    /// no strategy will be returned.
-    /// # Examples
-    /// ``` rust
-    /// # use ui_utils::out;
-    /// # use ui_utils::trim::Ignore;
-    /// # use ui_utils::grid::*;
-    /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
-    /// let chunk = grid.split(&SplitStrategy::new().min_x(15));
-    /// assert_eq!(chunk, None);
-    /// let chunk = grid.split(&SplitStrategy::new().min_x(5));
-    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
-    /// # Ok(())
-    /// # }
-    /// ```
+    /**
+    Sets a minimum X value. If the grid cannot give the grid data this amount of length,
+    no strategy will be returned.
+    # Examples
+    ``` rust
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # use ui_utils::grid::*;
+    # fn main() -> Result<(), ()>{
+    let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    let chunk = grid.split(&SplitStrategy::new().min_x(15));
+    assert_eq!(chunk, None);
+    let chunk = grid.split(&SplitStrategy::new().min_x(5));
+    assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+    # Ok(())
+    # }
+    ```
+    */
     pub fn min_x(mut self, v: usize) -> Self {
         self.min_size_x = Some(v);
         self
     }
-    /// Sets a minimum Y value. If the grid cannot give the grid data this amount of height,
-    /// no strategy will be returned.
-    /// # Examples
-    /// ``` rust
-    /// # use ui_utils::out;
-    /// # use ui_utils::trim::Ignore;
-    /// # use ui_utils::grid::*;
-    /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
-    /// let chunk = grid.split(&SplitStrategy::new().min_y(15));
-    /// assert_eq!(chunk, None);
-    /// let chunk = grid.split(&SplitStrategy::new().min_y(5));
-    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
-    /// # Ok(())
-    /// # }
-    /// ```
+    /**
+    Sets a minimum Y value. If the grid cannot give the grid data this amount of height,
+    no strategy will be returned.
+    # Examples
+    ``` rust
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # use ui_utils::grid::*;
+    # fn main() -> Result<(), ()>{
+    let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    let chunk = grid.split(&SplitStrategy::new().min_y(15));
+    assert_eq!(chunk, None);
+    let chunk = grid.split(&SplitStrategy::new().min_y(5));
+    assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+    # Ok(())
+    # }
+    ```
+    */
     pub fn min_y(mut self, v: usize) -> Self {
         self.min_size_y = Some(v);
         self
@@ -335,47 +353,51 @@ impl Grid {
             end_y,
         }
     }
-    /// Splits the grid into two others based on a SplitStrategy. 
-    /// With the default split strategy, the entire grid will go into the returned grid, leaving the first one empty. 
-    /// Expect to use this function a lot. 
-    /// # Return value
-    /// Returns None if no new grid can be created - either because the grid is already empty or because it's below the minimum size.
-    /// # Examples
-    /// ``` rust
-    /// # use ui_utils::out;
-    /// # use ui_utils::trim::Ignore;
-    /// # use ui_utils::grid::*;
-    /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
-    /// let second = grid.split(&SplitStrategy::new().max_y(5, Alignment::Minus));
-    /// assert_eq!(second, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 5}));
-    /// assert_eq!(grid, Grid {start_x: 0, start_y: 5, end_x: 10, end_y: 10});
-    /// let cant_be_made = grid.split(&SplitStrategy::new().min_y(6));
-    /// assert_eq!(cant_be_made, None);
-    /// let takes_up_all = grid.split(&SplitStrategy::new());
-    /// assert_eq!(takes_up_all, Some(Grid {start_x: 0, start_y: 5, end_x: 10, end_y: 10}));
-    /// assert_eq!(grid, Grid {start_x: 10, start_y: 10, end_x: 10, end_y: 10});
-    /// let cant_be_made = grid.split(&SplitStrategy::new());
-    /// assert_eq!(cant_be_made, None);
-    /// # Ok(())
-    /// # }
-    /// ```
+    /**
+    Splits the grid into two others based on a SplitStrategy. 
+    With the default split strategy, the entire grid will go into the returned grid, leaving the first one empty. 
+    Expect to use this function a lot. 
+    # Return value
+    Returns None if no new grid can be created - either because the grid is already empty or because it's below the minimum size.
+    # Examples
+    ``` rust
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # use ui_utils::grid::*;
+    # fn main() -> Result<(), ()>{
+    let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    let second = grid.split(&SplitStrategy::new().max_y(5, Alignment::Minus));
+    assert_eq!(second, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 5}));
+    assert_eq!(grid, Grid {start_x: 0, start_y: 5, end_x: 10, end_y: 10});
+    let cant_be_made = grid.split(&SplitStrategy::new().min_y(6));
+    assert_eq!(cant_be_made, None);
+    let takes_up_all = grid.split(&SplitStrategy::new());
+    assert_eq!(takes_up_all, Some(Grid {start_x: 0, start_y: 5, end_x: 10, end_y: 10}));
+    assert_eq!(grid, Grid {start_x: 10, start_y: 10, end_x: 10, end_y: 10});
+    let cant_be_made = grid.split(&SplitStrategy::new());
+    assert_eq!(cant_be_made, None);
+    # Ok(())
+    # }
+    ```
+    */
     pub fn split(&mut self, strategy: &SplitStrategy) -> Option<Grid> {
         strategy.apply(self)
     }
-    /// Converts the grid into a DrawProcess. The draw process can then be used to draw onto the terminal. 
-    /// # Examples
-    /// ``` rust
-    /// # use ui_utils::out;
-    /// # use ui_utils::trim::Truncate;
-    /// # use ui_utils::grid::*;
-    /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
-    /// let mut process = grid.into_process(DividerStrategy::End);
-    /// process.add_to_section("Some text".to_string(), &mut Truncate, Alignment::Minus); 
-    /// # Ok(())
-    /// # }
-    /// ```
+    /**
+    Converts the grid into a DrawProcess. The draw process can then be used to draw onto the terminal. 
+    # Examples
+    ``` rust
+    # use ui_utils::out;
+    # use ui_utils::trim::Truncate;
+    # use ui_utils::grid::*;
+    # fn main() -> Result<(), ()>{
+    let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    let mut process = grid.into_process(DividerStrategy::End);
+    process.add_to_section("Some text".to_string(), &mut Truncate, Alignment::Minus); 
+    # Ok(())
+    # }
+    ```
+    */
     pub fn into_process(self, strategy: DividerStrategy) -> DrawProcess {
         DrawProcess::new(self, strategy)
     }
