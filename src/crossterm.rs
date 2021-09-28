@@ -3,10 +3,10 @@ use std::io::Stdout;
 use crate::out::{Action, Handler};
 
 use crossterm::{cursor::MoveTo, execute, queue, style::Print};
-/// A basic wrapper for crossterm. Turns this output into crossterm-based output. 
+/// A basic wrapper for crossterm. Turns this output into crossterm-based output.
 pub struct CrosstermHandler;
 impl CrosstermHandler {
-    /// Flushes any stray text into the terminal. 
+    /// Flushes any stray text into the terminal.
     pub fn finish(out: &mut Stdout) -> Result<(), crossterm::ErrorKind> {
         execute!(out)
     }

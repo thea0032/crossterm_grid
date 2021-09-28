@@ -1,15 +1,15 @@
 use crate::process::DrawProcess;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-/// This is a frame. It stores the terminal's size in a convenient place. 
-/// It isn't stored in a grid, as grids are altered when they're split. 
-/// For examples, see the frame's methods. 
+/// This is a frame. It stores the terminal's size in a convenient place.
+/// It isn't stored in a grid, as grids are altered when they're split.
+/// For examples, see the frame's methods.
 pub struct Frame {
     grid: Grid,
 }
 impl Frame {
     /**
-    Creates a new frame. 
+    Creates a new frame.
     # Example
     ``` rust
     # use ui_utils::grid::Frame;
@@ -19,15 +19,17 @@ impl Frame {
     ```
     */
     pub fn new(x_min: usize, y_min: usize, x_max: usize, y_max: usize) -> Frame {
-        Frame {grid: Grid {
-            start_x: x_min,
-            start_y: y_min,
-            end_x: x_max,
-            end_y: y_max,
-        }}
+        Frame {
+            grid: Grid {
+                start_x: x_min,
+                start_y: y_min,
+                end_x: x_max,
+                end_y: y_max,
+            },
+        }
     }
     /**
-    Produces a fresh grid, which contains the entire frame. 
+    Produces a fresh grid, which contains the entire frame.
     # Example
     ``` rust
     # use ui_utils::grid::Frame;
@@ -43,7 +45,7 @@ impl Frame {
         self.grid.clone()
     }
     /**
-    Resizes the grid, changing its size. 
+    Resizes the grid, changing its size.
     # Example
     ``` rust
     # use ui_utils::grid::Frame;
@@ -153,7 +155,7 @@ impl SplitStrategy {
     # Ok(())
     # }
     ```
-    Cannot set both max x and max y 
+    Cannot set both max x and max y
     ```should_panic
     # use ui_utils::out;
     # use ui_utils::trim::Ignore;
@@ -191,7 +193,7 @@ impl SplitStrategy {
     # Ok(())
     # }
     ```
-    Cannot set both max x and max y 
+    Cannot set both max x and max y
     ```should_panic
     # use ui_utils::out;
     # use ui_utils::trim::Ignore;
@@ -286,22 +288,12 @@ impl SplitStrategy {
                 let size = size.min(grid.end_x - grid.start_x);
                 if matches!(alignment, Alignment::Minus) {
                     // Takes up the entire grid, up to the maximum size from the left.
-                    let return_value = Some(Grid::new(
-                        grid.start_x,
-                        grid.start_y,
-                        grid.start_x + size,
-                        grid.end_y,
-                    ));
+                    let return_value = Some(Grid::new(grid.start_x, grid.start_y, grid.start_x + size, grid.end_y));
                     grid.start_x += size;
                     return_value
                 } else {
                     // Takes up the entire grid, up to the maximum size from the right.
-                    let return_value = Some(Grid::new(
-                        grid.end_x - size,
-                        grid.start_y,
-                        grid.end_x,
-                        grid.end_y,
-                    ));
+                    let return_value = Some(Grid::new(grid.end_x - size, grid.start_y, grid.end_x, grid.end_y));
                     grid.end_x -= size;
                     return_value
                 }
@@ -311,22 +303,12 @@ impl SplitStrategy {
                 let size = size.min(grid.end_y - grid.start_y);
                 if matches!(alignment, Alignment::Minus) {
                     // Takes up the entire grid, up to the maximum size from the top.
-                    let return_value = Some(Grid::new(
-                    grid.start_x,
-                    grid.start_y,
-                    grid.end_x,
-                    grid.start_y + size,
-                    ));
+                    let return_value = Some(Grid::new(grid.start_x, grid.start_y, grid.end_x, grid.start_y + size));
                     grid.start_y += size;
                     return_value
                 } else {
                     // Takes up the entire grid, up to the maximum size from the bottom.
-                    let return_value = Some(Grid::new(
-                        grid.start_x,
-                        grid.end_y - size,
-                        grid.end_x,
-                        grid.end_y,
-                    ));
+                    let return_value = Some(Grid::new(grid.start_x, grid.end_y - size, grid.end_x, grid.end_y));
                     grid.end_y -= size;
                     return_value
                 }
@@ -337,7 +319,7 @@ impl SplitStrategy {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// A grid - basically, a square meant to resemble a portion of a terminal. Can be split up into other grids.
-/// Cloning a grid is bad practice! Use it only if you must. 
+/// Cloning a grid is bad practice! Use it only if you must.
 pub struct Grid {
     pub start_x: usize,
     pub start_y: usize,
@@ -354,9 +336,9 @@ impl Grid {
         }
     }
     /**
-    Splits the grid into two others based on a SplitStrategy. 
-    With the default split strategy, the entire grid will go into the returned grid, leaving the first one empty. 
-    Expect to use this function a lot. 
+    Splits the grid into two others based on a SplitStrategy.
+    With the default split strategy, the entire grid will go into the returned grid, leaving the first one empty.
+    Expect to use this function a lot.
     # Return value
     Returns None if no new grid can be created - either because the grid is already empty or because it's below the minimum size.
     # Examples
@@ -384,7 +366,7 @@ impl Grid {
         strategy.apply(self)
     }
     /**
-    Converts the grid into a DrawProcess. The draw process can then be used to draw onto the terminal. 
+    Converts the grid into a DrawProcess. The draw process can then be used to draw onto the terminal.
     # Examples
     ``` rust
     # use ui_utils::out;
@@ -393,7 +375,7 @@ impl Grid {
     # fn main() -> Result<(), ()>{
     let mut grid = Frame::new(0, 0, 10, 10).next_frame();
     let mut process = grid.into_process(DividerStrategy::End);
-    process.add_to_section("Some text".to_string(), &mut Truncate, Alignment::Minus); 
+    process.add_to_section("Some text".to_string(), &mut Truncate, Alignment::Minus);
     # Ok(())
     # }
     ```

@@ -1,5 +1,9 @@
-use crate::{FormatError, Grid, TrimStrategy, grid::{Alignment, DividerStrategy}, out::{Action, Handler, SafeHandler}, trim::{TrimmedText}};
-
+use crate::{
+    grid::{Alignment, DividerStrategy},
+    out::{Action, Handler, SafeHandler},
+    trim::TrimmedText,
+    FormatError, Grid, TrimStrategy,
+};
 
 enum InternalFormatError {
     NoSpace(TrimmedText),
@@ -37,7 +41,7 @@ impl DrawProcess {
             example_str: " ".chars().cycle().take(val.end_x - val.start_x).collect(),
         }
     }
-    /// Gets the chunk's width - the number of characters that can be displayed on a line. 
+    /// Gets the chunk's width - the number of characters that can be displayed on a line.
     /// ``` rust
     /// # use ui_utils::grid;
     /// # fn main() -> Result<(), ()>{
@@ -50,7 +54,7 @@ impl DrawProcess {
     pub fn width(&self) -> usize {
         self.end_x - self.start_x
     }
-    /// Gets the chunk's height - the number of lines that can fit in it. 
+    /// Gets the chunk's height - the number of lines that can fit in it.
     /// ``` rust
     /// # use ui_utils::grid;
     /// # fn main() -> Result<(), ()>{
@@ -63,7 +67,7 @@ impl DrawProcess {
     pub fn height(&self) -> usize {
         self.end_y - self.start_y
     }
-    /// Gets the x position where the process begins. 
+    /// Gets the x position where the process begins.
     /// ``` rust
     /// # use ui_utils::grid;
     /// # fn main() -> Result<(), ()>{
@@ -73,10 +77,12 @@ impl DrawProcess {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn start_x(&self) -> usize {self.start_x}
-    
+    pub fn start_x(&self) -> usize {
+        self.start_x
+    }
+
     /**
-    Gets the y position where the process begins. 
+    Gets the y position where the process begins.
     ``` rust
     # use ui_utils::grid;
     # fn main() -> Result<(), ()>{
@@ -87,10 +93,12 @@ impl DrawProcess {
     # }
     ```
     */
-    pub fn start_y(&self) -> usize {self.start_y}
-    
+    pub fn start_y(&self) -> usize {
+        self.start_y
+    }
+
     /**
-    Gets the x position where the process ends.  
+    Gets the x position where the process ends.
     ``` rust
     # use ui_utils::grid;
     # fn main() -> Result<(), ()>{
@@ -101,10 +109,12 @@ impl DrawProcess {
     # }
     ```
     */
-    pub fn end_x(&self) -> usize {self.end_x}
-    
+    pub fn end_x(&self) -> usize {
+        self.end_x
+    }
+
     /**
-    Gets the y position where the process ends.  
+    Gets the y position where the process ends.
     ``` rust
     # use ui_utils::grid;
     # fn main() -> Result<(), ()>{
@@ -115,7 +125,9 @@ impl DrawProcess {
     # }
     ```
     */
-    pub fn end_y(&self) -> usize {self.end_y}
+    pub fn end_y(&self) -> usize {
+        self.end_y
+    }
     #[doc(hidden)]
     /// Trims a string using a trim strategy.
     fn trim<T: TrimStrategy>(&self, text: T::Input, b: &mut T, a: Alignment) -> Vec<TrimmedText> {
@@ -123,12 +135,12 @@ impl DrawProcess {
     }
     /**
     Adds multi-line content to the selection, using the inputted strategy inside the inputted alignment. Returns everything that can't fit.
-    Note that the multi-line content goes top to bottom, even if Alignment::Minus is selected. 
+    Note that the multi-line content goes top to bottom, even if Alignment::Minus is selected.
     This is the exact opposite behavior of simply sending multiple lines.
-    The content only needs to be iterated through. 
+    The content only needs to be iterated through.
     # Errors
-    Each position represents the corresponding position of the text input. An error will be found if the call to add_to_section() returns an error. 
-    # Examples 
+    Each position represents the corresponding position of the text input. An error will be found if the call to add_to_section() returns an error.
+    # Examples
     Usage in positive direction
     ``` rust
     # use ui_utils::grid;
@@ -193,20 +205,20 @@ impl DrawProcess {
     ```
     */
     pub fn add_to_section_lines<T, I>(&mut self, text: I, strategy: &mut T, section: Alignment) -> Vec<Result<(), FormatError<T>>>
-    where T: TrimStrategy, I: DoubleEndedIterator, I: Iterator<Item = T::Input> {
+    where
+        T: TrimStrategy,
+        I: DoubleEndedIterator,
+        I: Iterator<Item = T::Input>,
+    {
         if matches!(section, Alignment::Minus) {
             let text = text.rev();
-            let mut res = text
-                .map(|x| self.add_to_section(x, strategy, section))
-                .collect::<Vec<_>>();
+            let mut res = text.map(|x| self.add_to_section(x, strategy, section)).collect::<Vec<_>>();
             if matches!(section, Alignment::Minus) {
                 res.reverse();
             }
             res
         } else {
-            let mut res = text
-                .map(|x| self.add_to_section(x, strategy, section))
-                .collect::<Vec<_>>();
+            let mut res = text.map(|x| self.add_to_section(x, strategy, section)).collect::<Vec<_>>();
             if matches!(section, Alignment::Minus) {
                 res.reverse();
             }
@@ -214,7 +226,7 @@ impl DrawProcess {
         }
     }
     /**
-    Adds single-line content to the selection, using the inputted strategy inside the inputted alignment. 
+    Adds single-line content to the selection, using the inputted strategy inside the inputted alignment.
     # Errors
     This method will return an error if the text won't fit. The text will be returned (although it might be trimmed from trim methods.)
     # Examples
@@ -249,17 +261,17 @@ impl DrawProcess {
     # Ok(())
     # }
     ```
-    Running out of space: 
+    Running out of space:
     ``` rust
     # use ui_utils::grid;
     # use ui_utils::out;
     # use ui_utils::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 1).next_frame(); // creates a grid with one line
-    let chunk = grid.split(&grid::SplitStrategy::new()).ok_or(())?; 
-    let mut process = grid.into_process(grid::DividerStrategy::Beginning); 
-    process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus); 
-    assert!(process.add_to_section("No more".to_string(), &mut Ignore, grid::Alignment::Plus).is_err()); 
+    let chunk = grid.split(&grid::SplitStrategy::new()).ok_or(())?;
+    let mut process = grid.into_process(grid::DividerStrategy::Beginning);
+    process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+    assert!(process.add_to_section("No more".to_string(), &mut Ignore, grid::Alignment::Plus).is_err());
     # Ok(())
     # }
     ```
@@ -296,11 +308,11 @@ impl DrawProcess {
         };
         match error {
             InternalFormatError::NoSpace(back) => {
-                // Adds the text that couldn't be formatted back onto the start and collects them all. 
-                let extras = Some(back).into_iter().chain(i).collect::<Vec<_>>(); 
+                // Adds the text that couldn't be formatted back onto the start and collects them all.
+                let extras = Some(back).into_iter().chain(i).collect::<Vec<_>>();
                 // Adds the error.
                 Err(FormatError::NoSpace(strategy.back(extras, &self, section)))
-            },
+            }
         }
     }
     #[doc(hidden)]
@@ -358,7 +370,7 @@ impl DrawProcess {
         }
     }
     #[doc(hidden)]
-    /// Transforms the board into actions. 
+    /// Transforms the board into actions.
     fn grab_actions(&mut self) -> Vec<Action> {
         let mut result = Vec::new();
         let start_x = self.start_x;
@@ -387,9 +399,9 @@ impl DrawProcess {
         result
     }
     /**
-    Prints out the grid using a handler. 
+    Prints out the grid using a handler.
     # Errors
-    Returns an error if the handler returns an error. 
+    Returns an error if the handler returns an error.
     ``` rust
     # use ui_utils::grid;
     # use ui_utils::out;
@@ -413,11 +425,11 @@ impl DrawProcess {
         Ok(())
     }
     /**
-    Prints safely - this method cannot return an error. 
+    Prints safely - this method cannot return an error.
     # Panics
-    This method panics when the handler panics. 
+    This method panics when the handler panics.
     # Examples
-    Safe printing: 
+    Safe printing:
     ``` rust
     # use ui_utils::grid;
     # use ui_utils::out;

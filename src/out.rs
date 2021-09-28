@@ -23,7 +23,7 @@ let mut grid = grid::Frame::new(0, 0, 10, 4).next_frame();
 let mut process = grid.into_process(grid::DividerStrategy::Halfway);
 let mut some_handler = Ignore;
 process.add_to_section("Some stuff".to_string(), &mut some_handler, grid::Alignment::Plus);
-// The handler can be re-used. 
+// The handler can be re-used.
 process.add_to_section("More stuff".to_string(), &mut some_handler, grid::Alignment::Plus);
 # Ok(())
 # }
@@ -39,10 +39,10 @@ pub trait SafeHandler {
     fn safe_handle(&mut self, out: &mut Self::OutputDevice, input: &Action);
 }
 /**
-A handler that outputs the text to a string, as lines. It does not pay attention to the location used. 
-This means that it won't panic at all, and will generally accept whatever text is thrown at it. 
-This makes it useful for debug purposes. 
-However, it doesn't do any formatting, and doesn't change behavior based on locations - only where you call it matters. 
+A handler that outputs the text to a string, as lines. It does not pay attention to the location used.
+This means that it won't panic at all, and will generally accept whatever text is thrown at it.
+This makes it useful for debug purposes.
+However, it doesn't do any formatting, and doesn't change behavior based on locations - only where you call it matters.
 # Example
 ``` rust
 # use ui_utils::grid;
@@ -84,8 +84,11 @@ impl SafeHandler for OutToString {
     type OutputDevice = String;
     fn safe_handle(&mut self, out: &mut String, input: &Action) {
         match input {
-            Action::Print(s) => {out.push_str(s); out.push('\n')},
-            Action::MoveTo(_, _) => {},
+            Action::Print(s) => {
+                out.push_str(s);
+                out.push('\n')
+            }
+            Action::MoveTo(_, _) => {}
         }
     }
 }
@@ -102,10 +105,10 @@ A more complicated version of the structure OutToString. This modifies a string 
 instead of pushing any text directly to a string. This allows the structure to actually
 process multiple grids in any order, at the expense of time cost.
 # Panics
-This structure will cause a panic if it tries to print text that cannot fit in the assigned buffer. 
-This will not happen unless you either (A) use a structure that doesn't force text to fit 
+This structure will cause a panic if it tries to print text that cannot fit in the assigned buffer.
+This will not happen unless you either (A) use a structure that doesn't force text to fit
 the frame/grid such as trim::Ignore, or (B) construct this structure with starting or ending
-points different from the frame it's used in.   
+points different from the frame it's used in.
 # Examples
 Basic usage
 ``` rust
@@ -168,7 +171,7 @@ pub struct StringBuffer {
     current_y: usize,
 }
 impl StringBuffer {
-    /// Creates as new StringBuffer. 
+    /// Creates as new StringBuffer.
     pub fn new(min_x: usize, min_y: usize, max_x: usize, max_y: usize) -> StringBuffer {
         StringBuffer {
             contents: vec![vec![" ".to_string(); max_x - min_x]; max_y - min_y],
@@ -178,12 +181,12 @@ impl StringBuffer {
             offset_y: min_y,
         }
     }
-    /// Creates a new StringBuffer with the same dimensions as the frame used. 
+    /// Creates a new StringBuffer with the same dimensions as the frame used.
     pub fn from_frame(f: &Frame) -> StringBuffer {
         let g = f.next_frame();
         StringBuffer::new(g.start_x, g.start_y, g.end_x, g.end_y)
     }
-    /// Prints the StringBuffer. 
+    /// Prints the StringBuffer.
     pub fn finalize(&self) {
         for line in &self.contents {
             for block in line {
@@ -192,7 +195,7 @@ impl StringBuffer {
             println!();
         }
     }
-    /// Returns the StringBuffer lines. 
+    /// Returns the StringBuffer lines.
     pub fn display(self) -> Vec<String> {
         self.contents.into_iter().map(|x| x.into_iter().collect::<String>()).collect::<Vec<_>>()
     }
@@ -206,11 +209,11 @@ impl SafeHandler for StringBuffer {
                 for (i, line) in v.grapheme_indices(true) {
                     self.contents[self.current_y][self.current_x + i] = line.to_string();
                 }
-            },
+            }
             Action::MoveTo(x, y) => {
                 self.current_x = *x + self.offset_x;
                 self.current_y = *y + self.offset_y;
-            },
+            }
         }
     }
 }
