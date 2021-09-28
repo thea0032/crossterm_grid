@@ -1,12 +1,13 @@
-use crate::{FormatError, TrimStrategy, grid::{Alignment, Chunk, DividerStrategy}, out::{Action, Handler, SafeHandler}, trim::{TrimmedText}};
+use crate::{FormatError, Grid, TrimStrategy, grid::{Alignment, DividerStrategy}, out::{Action, Handler, SafeHandler}, trim::{TrimmedText}};
 
 
 enum InternalFormatError {
     NoSpace(TrimmedText),
 }
-/// A structure that can display text inside a chunk.  
+/// A structure that can display text inside a grid.  
+/// Cloning chunk processes is bad practice! Use it only if you have to.  
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ChunkProcess {
+pub struct DrawProcess {
     start_x: usize,
     start_y: usize,
     end_x: usize,
@@ -16,32 +17,31 @@ pub struct ChunkProcess {
     plus: Vec<TrimmedText>,
     example_str: String,
 }
-impl ChunkProcess {
+impl DrawProcess {
     /// Creates a new chunk process.
-    pub(crate) fn new(val: &Chunk, strategy: DividerStrategy) -> ChunkProcess {
-        ChunkProcess {
-            start_x: val.start_x(),
-            start_y: val.start_y(),
-            end_x: val.end_x(),
-            end_y: val.end_y(),
+    pub(crate) fn new(val: Grid, strategy: DividerStrategy) -> DrawProcess {
+        DrawProcess {
+            start_x: val.start_x,
+            start_y: val.start_y,
+            end_x: val.end_x,
+            end_y: val.end_y,
             divider: match strategy {
                 DividerStrategy::Beginning => 0,
-                DividerStrategy::End => val.end_y() - val.start_y(),
-                DividerStrategy::Halfway => (val.end_y() - val.start_y()) / 2,
+                DividerStrategy::End => val.end_y - val.start_y,
+                DividerStrategy::Halfway => (val.end_y - val.start_y) / 2,
                 DividerStrategy::Pos(v) => v,
             },
             minus: Vec::new(),
             plus: Vec::new(),
-            example_str: " ".chars().cycle().take(val.end_x() - val.start_x()).collect(),
+            example_str: " ".chars().cycle().take(val.end_x - val.start_x).collect(),
         }
     }
     /// Gets the chunk's width - the number of characters that can be displayed on a line. 
     /// ``` rust
     /// # use ui_utils::grid;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// assert_eq!(process.width(), 70);
     /// # Ok(())
     /// # }
@@ -53,9 +53,8 @@ impl ChunkProcess {
     /// ``` rust
     /// # use ui_utils::grid;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// assert_eq!(process.height(), 70);
     /// # Ok(())
     /// # }
@@ -67,9 +66,8 @@ impl ChunkProcess {
     /// ``` rust
     /// # use ui_utils::grid;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// assert_eq!(process.start_x(), 30);
     /// # Ok(())
     /// # }
@@ -80,9 +78,8 @@ impl ChunkProcess {
     /// ``` rust
     /// # use ui_utils::grid;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// assert_eq!(process.start_y(), 30);
     /// # Ok(())
     /// # }
@@ -93,9 +90,8 @@ impl ChunkProcess {
     /// ``` rust
     /// # use ui_utils::grid;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// assert_eq!(process.end_x(), 100);
     /// # Ok(())
     /// # }
@@ -106,9 +102,8 @@ impl ChunkProcess {
     /// ``` rust
     /// # use ui_utils::grid;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(30, 30, 100, 100);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// assert_eq!(process.end_y(), 100);
     /// # Ok(())
     /// # }
@@ -131,9 +126,8 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
+        /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// process.add_to_section_lines(vec!["Some stuff".to_string(), "More stuff".to_string()], &mut Ignore, grid::Alignment::Plus);
     /// let mut output: String = String::new();
     /// process.print(&mut out::OutToString, &mut output)?;
@@ -147,9 +141,8 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::End);
+    /// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
+        /// let mut process = grid.into_process(grid::DividerStrategy::End);
     /// process.add_to_section_lines(vec!["Some stuff".to_string(), "More stuff".to_string()], &mut Ignore, grid::Alignment::Minus);
     /// let mut output: String = String::new();
     /// process.print(&mut out::OutToString, &mut output)?;
@@ -163,9 +156,8 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 10, 2);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(0, 0, 10, 2).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// let result = process.add_to_section_lines(vec!["Some stuff".to_string(), "More stuff".to_string(), "Even more!".to_string()], &mut Ignore, grid::Alignment::Plus);
     /// let mut output: String = String::new();
     /// process.print(&mut out::OutToString, &mut output)?;
@@ -180,9 +172,8 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 10, 2);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::End);
+    /// let mut grid = grid::Frame::new(0, 0, 10, 2).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::End);
     /// let result = process.add_to_section_lines(vec!["Some stuff".to_string(), "More stuff".to_string(), "Even more!".to_string()], &mut Ignore, grid::Alignment::Minus);
     /// let mut output: String = String::new();
     /// process.print(&mut out::OutToString, &mut output)?;
@@ -213,9 +204,8 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
     /// let mut output: String = String::new();
     /// process.print(&mut out::OutToString, &mut output)?;
@@ -229,9 +219,8 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
     /// process.add_to_section("More stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
     /// let mut output: String = String::new();
@@ -246,9 +235,9 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 10, 1); // creates a grid with one line
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?; 
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning); 
+    /// let mut grid = grid::Frame::new(0, 0, 10, 1).next_frame(); // creates a grid with one line
+    /// let chunk = grid.split(&grid::SplitStrategy::new()).ok_or(())?; 
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning); 
     /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus); 
     /// assert!(process.add_to_section("No more".to_string(), &mut Ignore, grid::Alignment::Plus).is_err()); 
     /// # Ok(())
@@ -260,9 +249,8 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 100, 100);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(0, 0, 100, 100).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// assert!(process.add_to_section(
     ///     "The divider is at the beginning! There's no room for negatively aligned text!"
     ///     .to_string(),
@@ -320,9 +308,8 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 10, 4);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Halfway);
+    /// let mut grid = grid::Frame::new(0, 0, 10, 4).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Halfway);
     /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
     /// process.add_to_section("More stuff".to_string(), &mut Ignore, grid::Alignment::Minus);
     /// let mut output: String = String::new();
@@ -384,9 +371,8 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
     /// let mut output: String = String::new();
     /// process.print(&mut out::OutToString, &mut output)?;
@@ -411,9 +397,8 @@ impl ChunkProcess {
     /// # use ui_utils::out;
     /// # use ui_utils::trim::Ignore;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = grid::Grid::new(0, 0, 10, 3);
-    /// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-    /// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+    /// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
+    /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
     /// let mut output: String = String::new();
     /// process.print_safe(&mut out::OutToString, &mut output);

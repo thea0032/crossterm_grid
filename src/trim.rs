@@ -2,7 +2,7 @@ use std::{error::Error, fmt::{Debug, Display}};
 
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{Alignment, ChunkProcess};
+use crate::{Alignment, DrawProcess};
 
 /// Represents a formatting problem. Gives your string back. 
 /// Note that some of the information in the string may be lost.
@@ -14,9 +14,8 @@ use crate::{Alignment, ChunkProcess};
 /// # use ui_utils::trim::Ignore;
 /// # use ui_utils::trim::FormatError;
 /// # fn main() -> Result<(), ()>{
-/// let mut grid = grid::Grid::new(0, 0, 10, 1); // creates a grid with one line
-/// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?; 
-/// let mut process = chunk.to_process(grid::DividerStrategy::Beginning); 
+/// let mut grid = grid::Frame::new(0, 0, 10, 1).next_frame(); // creates a grid with one line
+/// let mut process = grid.into_process(grid::DividerStrategy::Beginning); 
 /// process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus); 
 /// let e = process.add_to_section("No more".to_string(), &mut Ignore, grid::Alignment::Plus).unwrap_err();
 /// if let FormatError::NoSpace(val) = e {
@@ -59,12 +58,12 @@ pub trait TrimStrategy where Self: DisplayAndDebug {
     /// Processes the string, allowing it to be properly displayed. 
     /// For examples, see the three TrimStrategy structs below. 
     /// This function generally shouldn't panic, and it should be marked clearly if it does. 
-    fn trim(&mut self, text: Self::Input, chunk: &ChunkProcess, a: Alignment) -> Vec<TrimmedText>;
+    fn trim(&mut self, text: Self::Input, chunk: &DrawProcess, a: Alignment) -> Vec<TrimmedText>;
     /// Undoes processing of the string, allowing it to be used again (or in a different way) by the user. 
     /// For examples, see the three TrimStrategy structs below. 
     /// Any alterations and information loss should be marked clearly. 
     /// This function generally shouldn't panic, and it should be marked clearly if it does. 
-    fn back(&mut self, text: Vec<TrimmedText>, _: &ChunkProcess, a: Alignment) -> Self::Input;
+    fn back(&mut self, text: Vec<TrimmedText>, _: &DrawProcess, a: Alignment) -> Self::Input;
 }
 #[derive(Debug)]
 /// Useful for debug purposes, or for quick code. Bypasses the grid restrictions entirely. 
@@ -78,9 +77,8 @@ pub trait TrimStrategy where Self: DisplayAndDebug {
 /// # use ui_utils::trim::TrimStrategy;
 /// # use ui_utils::trim::TrimmedText;
 /// # fn main() -> Result<(), ()>{
-/// let mut grid = grid::Grid::new(0, 0, 10, 3);
-/// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-/// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+/// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
+/// let mut process = grid.into_process(grid::DividerStrategy::Beginning); 
 /// let v = Ignore.trim("small".to_string(), &process, grid::Alignment::Plus);
 /// assert_eq!(vec![TrimmedText("small".to_string())], v);
 /// let v = Ignore.trim("This fits.".to_string(), &process, grid::Alignment::Plus);
@@ -98,11 +96,11 @@ impl Display for Ignore {
 }
 impl TrimStrategy for Ignore {
     type Input = String;
-    fn trim(&mut self, text: String, _: &ChunkProcess, _: Alignment) -> Vec<TrimmedText> {
+    fn trim(&mut self, text: String, _: &DrawProcess, _: Alignment) -> Vec<TrimmedText> {
         vec![TrimmedText(text)]
     }
     
-    fn back(&mut self, text: Vec<TrimmedText>, _: &ChunkProcess, _: Alignment) -> Self::Input {
+    fn back(&mut self, text: Vec<TrimmedText>, _: &DrawProcess, _: Alignment) -> Self::Input {
         text.into_iter().next().expect("Safe unwrap").0
     }
 
@@ -118,9 +116,8 @@ impl TrimStrategy for Ignore {
 /// # use ui_utils::trim::TrimStrategy;
 /// # use ui_utils::trim::TrimmedText;
 /// # fn main() -> Result<(), ()>{
-/// let mut grid = grid::Grid::new(0, 0, 10, 3);
-/// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-/// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+/// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
+/// let mut process = grid.into_process(grid::DividerStrategy::Beginning); 
 /// let v = Truncate.trim("small".to_string(), &process, grid::Alignment::Plus);
 /// assert_eq!(vec![TrimmedText("small     ".to_string())], v);
 /// let v = Truncate.trim("This fits.".to_string(), &process, grid::Alignment::Plus);
@@ -138,12 +135,12 @@ impl Display for Truncate {
 }
 impl TrimStrategy for Truncate {
     type Input = String;
-    fn trim(&mut self, text: String, chunk: &ChunkProcess, _: Alignment) -> Vec<TrimmedText> {
+    fn trim(&mut self, text: String, chunk: &DrawProcess, _: Alignment) -> Vec<TrimmedText> {
         let blank_space = " ".graphemes(true).cycle();
         let res = text.graphemes(true).chain(blank_space).take(chunk.width()).collect();
         vec![TrimmedText(res)]
     }
-    fn back(&mut self, text: Vec<TrimmedText>, _: &ChunkProcess, _: Alignment) -> Self::Input {
+    fn back(&mut self, text: Vec<TrimmedText>, _: &DrawProcess, _: Alignment) -> Self::Input {
         text.into_iter().next().expect("Safe unwrap").0
     }
 }
@@ -158,9 +155,8 @@ impl TrimStrategy for Truncate {
 /// # use ui_utils::trim::TrimStrategy;
 /// # use ui_utils::trim::TrimmedText;
 /// # fn main() -> Result<(), ()>{
-/// let mut grid = grid::Grid::new(0, 0, 10, 3);
-/// let chunk = grid.apply_strategy(&grid::GridStrategy::new()).ok_or(())?;
-/// let mut process = chunk.to_process(grid::DividerStrategy::Beginning);
+/// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
+/// let mut process = grid.into_process(grid::DividerStrategy::Beginning); 
 /// let v = Split.trim("small".to_string(), &process, grid::Alignment::Plus);
 /// assert_eq!(vec![TrimmedText("small     ".to_string())], v);
 /// let v = Split.trim("This fits.".to_string(), &process, grid::Alignment::Plus);
@@ -178,7 +174,7 @@ impl Display for Split {
 }
 impl TrimStrategy for Split {
     type Input = String;
-    fn trim(&mut self, text: String, chunk: &ChunkProcess, a: Alignment) -> Vec<TrimmedText> {
+    fn trim(&mut self, text: String, chunk: &DrawProcess, a: Alignment) -> Vec<TrimmedText> {
         let mut v = text.graphemes(true).collect::<Vec<_>>();
         if v.is_empty() {
             v.push(" ");
@@ -188,7 +184,7 @@ impl TrimStrategy for Split {
         // The trimmed text result
         let mut res: Vec<TrimmedText> = Vec::new();
         for line in v.chunks(chunk.width()) {
-            // each line, except for the last one, extends the entire chunk. We only need to add extra blank space on the next one.
+            // each line, except for the last one, extends the entire grid. We only need to add extra blank space on the next one.
             // As long as there's an item after, we don't need to extend the line with blank space.
             if !storage.is_empty() {
                 res.push(TrimmedText(storage.iter().copied().collect::<String>()));
@@ -212,7 +208,7 @@ impl TrimStrategy for Split {
         }
         res
     }
-    fn back(&mut self, text: Vec<TrimmedText>, _: &ChunkProcess, a: Alignment) -> Self::Input {
+    fn back(&mut self, text: Vec<TrimmedText>, _: &DrawProcess, a: Alignment) -> Self::Input {
         if text.is_empty() {
             panic!("This shouldn't be an error!");
         }

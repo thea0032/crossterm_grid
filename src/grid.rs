@@ -1,5 +1,66 @@
-use crate::process::ChunkProcess;
-
+use crate::process::DrawProcess;
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+/// This is a frame. It stores the terminal's size in a convenient place. 
+/// It isn't stored in a grid, as grids are altered when they're split. 
+/// For examples, see the frame's methods. 
+pub struct Frame {
+    grid: Grid,
+}
+impl Frame {
+    /// Creates a new frame. 
+    /// # Example
+    /// ``` rust
+    /// # use ui_utils::grid::Frame;
+    /// # fn main() {
+    /// let ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
+    /// # }
+    /// ```
+    pub fn new(x_min: usize, y_min: usize, x_max: usize, y_max: usize) -> Frame {
+        Frame {grid: Grid {
+            start_x: x_min,
+            start_y: y_min,
+            end_x: x_max,
+            end_y: y_max,
+        }}
+    }
+    /// Produces a fresh grid, which contains the entire frame. 
+    /// # Example
+    /// ``` rust
+    /// # use ui_utils::grid::Frame;
+    /// # use ui_utils::grid::Grid;
+    /// # fn main() {
+    /// let ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
+    /// let ten_by_ten_grid: Grid = ten_by_ten.next_frame();
+    /// assert_eq!(ten_by_ten_grid, Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10});
+    /// # }
+    /// ```
+    pub fn next_frame(&self) -> Grid {
+        self.grid.clone()
+    }
+    /// Resizes the grid, changing its size. 
+    /// # Example
+    /// ``` rust
+    /// # use ui_utils::grid::Frame;
+    /// # use ui_utils::grid::Grid;
+    /// # fn main() {
+    /// let mut ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
+    /// let ten_by_ten_grid: Grid = ten_by_ten.next_frame();
+    /// assert_eq!(ten_by_ten_grid, Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10});
+    /// ten_by_ten.resize(5, 5, 10, 10);
+    /// let five_by_five_grid: Grid = ten_by_ten.next_frame();
+    /// assert_eq!(five_by_five_grid, Grid {start_x: 5, start_y: 5, end_x: 10, end_y: 10});
+    /// # }
+    /// ```
+    pub fn resize(&mut self, x_min: usize, y_min: usize, x_max: usize, y_max: usize) {
+        self.grid = Grid {
+            start_x: x_min,
+            start_y: y_min,
+            end_x: x_max,
+            end_y: y_max,
+        }
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// Whether the alignment is in the negative direction [up/left] or in the positive direction [down/right].
@@ -30,18 +91,18 @@ impl Default for Maximum {
 /// # use ui_utils::trim::Ignore;
 /// # use ui_utils::grid::*;
 /// # fn main() -> Result<(), ()>{
-/// let mut grid = Grid::new(0, 0, 10, 10);
-/// let chunk = grid.apply_strategy(&GridStrategy::new());
-/// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+/// let chunk = grid.split(&SplitStrategy::new());
+/// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
 /// # Ok(())
 /// # }
 /// ```
-pub struct GridStrategy {
+pub struct SplitStrategy {
     min_size_x: Option<usize>,
     min_size_y: Option<usize>,
     max_size: Maximum,
 }
-impl GridStrategy {
+impl SplitStrategy {
     /// Creates an empty grid strategy. Empty grid strategies will simply take up the entire grid.
     /// # Examples
     /// The default grid:
@@ -50,14 +111,14 @@ impl GridStrategy {
     /// # use ui_utils::trim::Ignore;
     /// # use ui_utils::grid::*;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Grid::new(0, 0, 10, 10);
-    /// let chunk = grid.apply_strategy(&GridStrategy::new());
-    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    /// let chunk = grid.split(&SplitStrategy::new());
+    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new() -> GridStrategy {
-        GridStrategy {
+    pub fn new() -> SplitStrategy {
+        SplitStrategy {
             min_size_x: None,
             min_size_y: None,
             max_size: Maximum::None,
@@ -73,11 +134,11 @@ impl GridStrategy {
     /// # use ui_utils::trim::Ignore;
     /// # use ui_utils::grid::*;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Grid::new(0, 0, 10, 10);
-    /// let chunk = grid.apply_strategy(&GridStrategy::new().max_x(5, Alignment::Minus));
-    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 5, end_y: 10}));
-    /// let chunk = grid.apply_strategy(&GridStrategy::new().max_x(2, Alignment::Plus));
-    /// assert_eq!(chunk, Some(Chunk {start_x: 8, start_y: 0, end_x: 10, end_y: 10}));
+    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    /// let chunk = grid.split(&SplitStrategy::new().max_x(5, Alignment::Minus));
+    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 5, end_y: 10}));
+    /// let chunk = grid.split(&SplitStrategy::new().max_x(2, Alignment::Plus));
+    /// assert_eq!(chunk, Some(Grid {start_x: 8, start_y: 0, end_x: 10, end_y: 10}));
     /// # Ok(())
     /// # }
     /// ```
@@ -87,7 +148,7 @@ impl GridStrategy {
     /// # use ui_utils::trim::Ignore;
     /// # use ui_utils::grid::*;
     /// # fn main() -> Result<(), ()>{
-    /// let cannot_set_both_x_and_y = GridStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
+    /// let cannot_set_both_x_and_y = SplitStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
     /// # Ok(())
     /// # }
     /// ```
@@ -109,11 +170,11 @@ impl GridStrategy {
     /// # use ui_utils::trim::Ignore;
     /// # use ui_utils::grid::*;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Grid::new(0, 0, 10, 10);
-    /// let chunk = grid.apply_strategy(&GridStrategy::new().max_y(5, Alignment::Minus));
-    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 10, end_y: 5}));
-    /// let chunk = grid.apply_strategy(&GridStrategy::new().max_y(2, Alignment::Plus));
-    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 8, end_x: 10, end_y: 10}));
+    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    /// let chunk = grid.split(&SplitStrategy::new().max_y(5, Alignment::Minus));
+    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 5}));
+    /// let chunk = grid.split(&SplitStrategy::new().max_y(2, Alignment::Plus));
+    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 8, end_x: 10, end_y: 10}));
     /// # Ok(())
     /// # }
     /// ```
@@ -123,7 +184,7 @@ impl GridStrategy {
     /// # use ui_utils::trim::Ignore;
     /// # use ui_utils::grid::*;
     /// # fn main() -> Result<(), ()>{
-    /// let cannot_set_both_x_and_y = GridStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
+    /// let cannot_set_both_x_and_y = SplitStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
     /// # Ok(())
     /// # }
     /// ```
@@ -143,11 +204,11 @@ impl GridStrategy {
     /// # use ui_utils::trim::Ignore;
     /// # use ui_utils::grid::*;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Grid::new(0, 0, 10, 10);
-    /// let chunk = grid.apply_strategy(&GridStrategy::new().min_x(15));
+    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    /// let chunk = grid.split(&SplitStrategy::new().min_x(15));
     /// assert_eq!(chunk, None);
-    /// let chunk = grid.apply_strategy(&GridStrategy::new().min_x(5));
-    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+    /// let chunk = grid.split(&SplitStrategy::new().min_x(5));
+    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
     /// # Ok(())
     /// # }
     /// ```
@@ -163,11 +224,11 @@ impl GridStrategy {
     /// # use ui_utils::trim::Ignore;
     /// # use ui_utils::grid::*;
     /// # fn main() -> Result<(), ()>{
-    /// let mut grid = Grid::new(0, 0, 10, 10);
-    /// let chunk = grid.apply_strategy(&GridStrategy::new().min_y(15));
+    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    /// let chunk = grid.split(&SplitStrategy::new().min_y(15));
     /// assert_eq!(chunk, None);
-    /// let chunk = grid.apply_strategy(&GridStrategy::new().min_y(5));
-    /// assert_eq!(chunk, Some(Chunk {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
+    /// let chunk = grid.split(&SplitStrategy::new().min_y(5));
+    /// assert_eq!(chunk, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 10}));
     /// # Ok(())
     /// # }
     /// ```
@@ -176,8 +237,8 @@ impl GridStrategy {
         self
     }
     #[doc(hidden)]
-    /// Applies a grid strategy. This is meant to be indirectly called.
-    fn apply_grid_strategy(&self, grid: &mut Grid) -> Option<Chunk> {
+    /// Applies a split strategy. This is meant to be indirectly called.
+    fn apply(&self, grid: &mut Grid) -> Option<Grid> {
         if grid.start_x == grid.end_x || grid.start_y == grid.end_y {
             // no space left
             return None;
@@ -197,12 +258,7 @@ impl GridStrategy {
         match &self.max_size {
             Maximum::None => {
                 // Takes up the entire grid
-                let return_value = Some(Chunk {
-                    start_x: grid.start_x,
-                    start_y: grid.start_y,
-                    end_x: grid.end_x,
-                    end_y: grid.end_y,
-                });
+                let return_value = Some(Grid::new(grid.start_x, grid.start_y, grid.end_x, grid.end_y));
                 grid.start_x = grid.end_x;
                 grid.start_y = grid.end_y;
                 return_value
@@ -212,22 +268,22 @@ impl GridStrategy {
                 let size = size.min(grid.end_x - grid.start_x);
                 if matches!(alignment, Alignment::Minus) {
                     // Takes up the entire grid, up to the maximum size from the left.
-                    let return_value = Some(Chunk {
-                        start_x: grid.start_x,
-                        start_y: grid.start_y,
-                        end_x: grid.start_x + size,
-                        end_y: grid.end_y,
-                    });
+                    let return_value = Some(Grid::new(
+                        grid.start_x,
+                        grid.start_y,
+                        grid.start_x + size,
+                        grid.end_y,
+                    ));
                     grid.start_x += size;
                     return_value
                 } else {
                     // Takes up the entire grid, up to the maximum size from the right.
-                    let return_value = Some(Chunk {
-                        start_x: grid.end_x - size,
-                        start_y: grid.start_y,
-                        end_x: grid.end_x,
-                        end_y: grid.end_y,
-                    });
+                    let return_value = Some(Grid::new(
+                        grid.end_x - size,
+                        grid.start_y,
+                        grid.end_x,
+                        grid.end_y,
+                    ));
                     grid.end_x -= size;
                     return_value
                 }
@@ -237,22 +293,22 @@ impl GridStrategy {
                 let size = size.min(grid.end_y - grid.start_y);
                 if matches!(alignment, Alignment::Minus) {
                     // Takes up the entire grid, up to the maximum size from the top.
-                    let return_value = Some(Chunk {
-                        start_x: grid.start_x,
-                        start_y: grid.start_y,
-                        end_x: grid.end_x,
-                        end_y: grid.start_y + size,
-                    });
+                    let return_value = Some(Grid::new(
+                    grid.start_x,
+                    grid.start_y,
+                    grid.end_x,
+                    grid.start_y + size,
+                    ));
                     grid.start_y += size;
                     return_value
                 } else {
                     // Takes up the entire grid, up to the maximum size from the bottom.
-                    let return_value = Some(Chunk {
-                        start_x: grid.start_x,
-                        start_y: grid.end_y - size,
-                        end_x: grid.end_x,
-                        end_y: grid.end_y,
-                    });
+                    let return_value = Some(Grid::new(
+                        grid.start_x,
+                        grid.end_y - size,
+                        grid.end_x,
+                        grid.end_y,
+                    ));
                     grid.end_y -= size;
                     return_value
                 }
@@ -262,56 +318,66 @@ impl GridStrategy {
 }
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-/// A grid - basically, a square meant to resemble a terminal. Chunks can be "bitten off" into GridData.
-/// This reserves a chunk of the terminal to only be written on a certain space.
+/// A grid - basically, a square meant to resemble a portion of a terminal. Can be split up into other grids.
+/// Cloning a grid is bad practice! Use it only if you must. 
 pub struct Grid {
-    orig: Chunk,
-    start_x: usize,
-    start_y: usize,
-    end_x: usize,
-    end_y: usize,
+    pub start_x: usize,
+    pub start_y: usize,
+    pub end_x: usize,
+    pub end_y: usize,
 }
 impl Grid {
-    /// Creates a new grid. Usually, start_x and start_y should be 0.
-    /// End_x and end_y are usually the size of your terminal.
-    pub fn new(start_x: usize, start_y: usize, end_x: usize, end_y: usize) -> Grid {
+    fn new(start_x: usize, start_y: usize, end_x: usize, end_y: usize) -> Grid {
         Grid {
-            orig: Chunk {
-                start_x,
-                start_y,
-                end_x,
-                end_y,
-            },
             start_x,
             start_y,
             end_x,
             end_y,
         }
     }
-    /// Applies a grid strategy to the grid, returning data that is capable of writing to a chunk of the terminal.
-    /// This will only be written on by that GridData.
-    pub fn apply_strategy(&mut self, strategy: &GridStrategy) -> Option<Chunk> {
-        strategy.apply_grid_strategy(self)
+    /// Splits the grid into two others based on a SplitStrategy. 
+    /// With the default split strategy, the entire grid will go into the returned grid, leaving the first one empty. 
+    /// Expect to use this function a lot. 
+    /// # Return value
+    /// Returns None if no new grid can be created - either because the grid is already empty or because it's below the minimum size.
+    /// # Examples
+    /// ``` rust
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Ignore;
+    /// # use ui_utils::grid::*;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    /// let second = grid.split(&SplitStrategy::new().max_y(5, Alignment::Minus));
+    /// assert_eq!(second, Some(Grid {start_x: 0, start_y: 0, end_x: 10, end_y: 5}));
+    /// assert_eq!(grid, Grid {start_x: 0, start_y: 5, end_x: 10, end_y: 10});
+    /// let cant_be_made = grid.split(&SplitStrategy::new().min_y(6));
+    /// assert_eq!(cant_be_made, None);
+    /// let takes_up_all = grid.split(&SplitStrategy::new());
+    /// assert_eq!(takes_up_all, Some(Grid {start_x: 0, start_y: 5, end_x: 10, end_y: 10}));
+    /// assert_eq!(grid, Grid {start_x: 10, start_y: 10, end_x: 10, end_y: 10});
+    /// let cant_be_made = grid.split(&SplitStrategy::new());
+    /// assert_eq!(cant_be_made, None);
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn split(&mut self, strategy: &SplitStrategy) -> Option<Grid> {
+        strategy.apply(self)
     }
-    /// Updates the size of the terminal with new data. Will take effect next time the function new_frame is called.
-    pub fn update_size(&mut self, new_size: Chunk) {
-        self.orig = new_size;
-    }
-    /// Resets the grid, allowing the entire terminal to be "bitten off" and overwritten.
-    pub fn new_frame(&mut self) {
-        self.start_x = self.orig.start_x;
-        self.start_y = self.orig.start_y;
-        self.end_x = self.orig.end_x;
-        self.end_y = self.orig.end_y;
-    }
-    /// Shows how much of the terminal is still on the grid.
-    pub fn info(&self) -> Chunk {
-        Chunk {
-            start_x: self.start_x,
-            start_y: self.start_y,
-            end_x: self.end_x,
-            end_y: self.end_y,
-        }
+    /// Converts the grid into a DrawProcess. The draw process can then be used to draw onto the terminal. 
+    /// # Examples
+    /// ``` rust
+    /// # use ui_utils::out;
+    /// # use ui_utils::trim::Truncate;
+    /// # use ui_utils::grid::*;
+    /// # fn main() -> Result<(), ()>{
+    /// let mut grid = Frame::new(0, 0, 10, 10).next_frame();
+    /// let mut process = grid.into_process(DividerStrategy::End);
+    /// process.add_to_section("Some text".to_string(), &mut Truncate, Alignment::Minus); 
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn into_process(self, strategy: DividerStrategy) -> DrawProcess {
+        DrawProcess::new(self, strategy)
     }
 }
 
@@ -319,37 +385,10 @@ impl Grid {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// Where the divider will be placed. The divider is between two sides: A plus side and a minus side.
 /// Content can be added on the plus or minus side if there's space available.
-/// For examples of divider behavior, see docs for ChunkProcess.
+/// For examples of divider behavior, see docs for DrawProcess.
 pub enum DividerStrategy {
     Beginning,
     End,
     Halfway,
     Pos(usize),
-}
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-/// A square chunk of the terminal. This is represented by
-pub struct Chunk {
-    pub start_x: usize,
-    pub start_y: usize,
-    pub end_x: usize,
-    pub end_y: usize,
-}
-impl Chunk {
-    /// Converts the chunk into a process. A process can have text added to it, and it can be printed.
-    pub fn to_process(&self, strategy: DividerStrategy) -> ChunkProcess {
-        ChunkProcess::new(self, strategy)
-    }
-    pub(crate) fn start_x(&self) -> usize {
-        self.start_x
-    }
-    pub(crate) fn start_y(&self) -> usize {
-        self.start_y
-    }
-    pub(crate) fn end_x(&self) -> usize {
-        self.end_x
-    }
-    pub(crate) fn end_y(&self) -> usize {
-        self.end_y
-    }
 }
