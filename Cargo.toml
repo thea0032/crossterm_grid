@@ -1,5 +1,5 @@
 [package]
-name = "ui_utils"
+name = "grid_ui"
 version = "0.1.0"
 authors = ["Thea <theah0032@gmail.com>"]
 edition = "2018"

@@ -15,9 +15,9 @@ A handler is a structure that can convert actions into an output on an output de
 This simple trait is rather self-explanatory.
 # Example
 ``` rust
-# use ui_utils::grid;
-# use ui_utils::out;
-# use ui_utils::trim::Ignore;
+# use grid_ui::grid;
+# use grid_ui::out;
+# use grid_ui::trim::Ignore;
 # fn main() -> Result<(), ()>{
 let mut grid = grid::Frame::new(0, 0, 10, 4).next_frame();
 let mut process = grid.into_process(grid::DividerStrategy::Halfway);
@@ -39,9 +39,9 @@ pub trait Handler {
 A handler that is "safe", ie doesn't return an error. All safe handlers are also handlers - you can use them as such. 
 # Example
 ``` rust
-# use ui_utils::grid;
-# use ui_utils::out;
-# use ui_utils::trim::Ignore;
+# use grid_ui::grid;
+# use grid_ui::out;
+# use grid_ui::trim::Ignore;
 # fn main() -> Result<(), ()>{
 let mut grid = grid::Frame::new(0, 0, 10, 4).next_frame();
 let mut process = grid.into_process(grid::DividerStrategy::Halfway);
@@ -65,9 +65,9 @@ This makes it useful for debug purposes.
 However, it doesn't do any formatting, and doesn't change behavior based on locations - only where you call it matters.
 # Example
 ``` rust
-# use ui_utils::grid;
-# use ui_utils::out;
-# use ui_utils::trim::Ignore;
+# use grid_ui::grid;
+# use grid_ui::out;
+# use grid_ui::trim::Ignore;
 # fn main() -> Result<(), ()>{
 let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
 let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -80,9 +80,9 @@ assert_eq!("Some stuff\nMore stuff\n          \n".to_string(), output);
 ```
 The limitations of this method
 ``` rust
-# use ui_utils::grid;
-# use ui_utils::out::*;
-# use ui_utils::trim::Ignore;
+# use grid_ui::grid;
+# use grid_ui::out::*;
+# use grid_ui::trim::Ignore;
 # fn main() -> Result<(), ()>{
 let frame = grid::Frame::new(0, 0, 10, 1);
 let mut left = frame.next_frame();
@@ -132,9 +132,9 @@ points different from the frame it's used in.
 # Examples
 Basic usage
 ``` rust
-# use ui_utils::grid;
-# use ui_utils::out::*;
-# use ui_utils::trim::Ignore;
+# use grid_ui::grid;
+# use grid_ui::out::*;
+# use grid_ui::trim::Ignore;
 # fn main() -> Result<(), ()>{
 let frame = grid::Frame::new(0, 0, 10, 1);
 let mut output: StringBuffer = StringBuffer::from_frame(&frame);
@@ -152,9 +152,9 @@ assert_eq!(vec!["Some stuff".to_string()], output.display());
 ```
 Panicking with ignore
 ``` should_panic
-# use ui_utils::grid;
-# use ui_utils::out::*;
-# use ui_utils::trim::Ignore;
+# use grid_ui::grid;
+# use grid_ui::out::*;
+# use grid_ui::trim::Ignore;
 # fn main() -> Result<(), ()>{
 let frame = grid::Frame::new(0, 0, 10, 1);
 let mut output: StringBuffer = StringBuffer::from_frame(&frame);
@@ -167,9 +167,9 @@ process.print(&mut output, &mut ())?; // panics
 ```
 Panicking with a grid mismatch
 ``` should_panic
-# use ui_utils::grid;
-# use ui_utils::out::*;
-# use ui_utils::trim::Truncate;
+# use grid_ui::grid;
+# use grid_ui::out::*;
+# use grid_ui::trim::Truncate;
 # fn main() -> Result<(), ()>{
 let frame = grid::Frame::new(0, 0, 10, 1);
 let mut small_output: StringBuffer = StringBuffer::new(5, 0, 10, 1);

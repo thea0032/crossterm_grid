@@ -40,7 +40,7 @@ impl DrawProcess {
     }
     /// Gets the chunk's width - the number of characters that can be displayed on a line.
     /// ``` rust
-    /// # use ui_utils::grid;
+    /// # use grid_ui::grid;
     /// # fn main() -> Result<(), ()>{
     /// let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
     /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -53,7 +53,7 @@ impl DrawProcess {
     }
     /// Gets the chunk's height - the number of lines that can fit in it.
     /// ``` rust
-    /// # use ui_utils::grid;
+    /// # use grid_ui::grid;
     /// # fn main() -> Result<(), ()>{
     /// let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
     /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -66,7 +66,7 @@ impl DrawProcess {
     }
     /// Gets the x position where the process begins.
     /// ``` rust
-    /// # use ui_utils::grid;
+    /// # use grid_ui::grid;
     /// # fn main() -> Result<(), ()>{
     /// let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
     /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -81,7 +81,7 @@ impl DrawProcess {
     /**
     Gets the y position where the process begins.
     ``` rust
-    # use ui_utils::grid;
+    # use grid_ui::grid;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -97,7 +97,7 @@ impl DrawProcess {
     /**
     Gets the x position where the process ends.
     ``` rust
-    # use ui_utils::grid;
+    # use grid_ui::grid;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -113,7 +113,7 @@ impl DrawProcess {
     /**
     Gets the y position where the process ends.
     ``` rust
-    # use ui_utils::grid;
+    # use grid_ui::grid;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(30, 30, 100, 100).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -140,9 +140,9 @@ impl DrawProcess {
     # Examples
     Usage in positive direction
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -155,9 +155,9 @@ impl DrawProcess {
     ```
     Usage in negative direction
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::End);
@@ -170,9 +170,9 @@ impl DrawProcess {
     ```
     Errors in positive direction
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 2).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -186,9 +186,9 @@ impl DrawProcess {
     ```
     Errors in negative direction
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 2).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::End);
@@ -229,9 +229,9 @@ impl DrawProcess {
     # Examples
     Basic printing:
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -244,9 +244,9 @@ impl DrawProcess {
     ```
     How order works
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -260,9 +260,9 @@ impl DrawProcess {
     ```
     Running out of space:
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 1).next_frame(); // creates a grid with one line
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -273,9 +273,9 @@ impl DrawProcess {
     ```
     Plan your divider strategy
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 100, 100).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -318,9 +318,9 @@ impl DrawProcess {
     Returns this space in a grid if there is any. If the process is already full, nothing will be returned. 
     # Example
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 10).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -389,9 +389,9 @@ impl DrawProcess {
     If the two grids are incompatible, it returns an error and gives the grid back. 
     # Example
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 10).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -442,9 +442,9 @@ impl DrawProcess {
     Shoves the data in the positive or negative direction, changing the divider to make more space available on one side.
     Moving text to the bottom or top:
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 4).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Halfway);
@@ -507,9 +507,9 @@ impl DrawProcess {
     # Errors
     Returns an error if the handler returns an error.
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -535,9 +535,9 @@ impl DrawProcess {
     # Examples
     Safe printing:
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);

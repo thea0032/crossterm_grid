@@ -12,7 +12,7 @@ impl Frame {
     Creates a new frame.
     # Example
     ``` rust
-    # use ui_utils::grid::Frame;
+    # use grid_ui::grid::Frame;
     # fn main() {
     let ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
     # }
@@ -32,8 +32,8 @@ impl Frame {
     Produces a fresh grid, which contains the entire frame.
     # Example
     ``` rust
-    # use ui_utils::grid::Frame;
-    # use ui_utils::grid::Grid;
+    # use grid_ui::grid::Frame;
+    # use grid_ui::grid::Grid;
     # fn main() {
     let ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
     let ten_by_ten_grid: Grid = ten_by_ten.next_frame();
@@ -48,8 +48,8 @@ impl Frame {
     Resizes the grid, changing its size.
     # Example
     ``` rust
-    # use ui_utils::grid::Frame;
-    # use ui_utils::grid::Grid;
+    # use grid_ui::grid::Frame;
+    # use grid_ui::grid::Grid;
     # fn main() {
     let mut ten_by_ten: Frame = Frame::new(0, 0, 10, 10);
     let ten_by_ten_grid: Grid = ten_by_ten.next_frame();
@@ -96,9 +96,9 @@ Inputting this to a grid will give a GridData based on the specifications used i
 # Examples
 Creating a grid
 ``` rust
-# use ui_utils::out;
-# use ui_utils::trim::Ignore;
-# use ui_utils::grid::*;
+# use grid_ui::out;
+# use grid_ui::trim::Ignore;
+# use grid_ui::grid::*;
 # fn main() -> Result<(), ()>{
 let mut grid = Frame::new(0, 0, 10, 10).next_frame();
 let chunk = grid.split(&SplitStrategy::new());
@@ -118,9 +118,9 @@ impl SplitStrategy {
     # Examples
     The default grid:
     ``` rust
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
-    # use ui_utils::grid::*;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
+    # use grid_ui::grid::*;
     # fn main() -> Result<(), ()>{
     let mut grid = Frame::new(0, 0, 10, 10).next_frame();
     let chunk = grid.split(&SplitStrategy::new());
@@ -145,9 +145,9 @@ impl SplitStrategy {
     # Examples
     Applying a grid with a maximum x value
     ``` rust
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
-    # use ui_utils::grid::*;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
+    # use grid_ui::grid::*;
     # fn main() -> Result<(), ()>{
     let mut grid = Frame::new(0, 0, 10, 10).next_frame();
     let chunk = grid.split(&SplitStrategy::new().max_x(5, Alignment::Minus));
@@ -159,9 +159,9 @@ impl SplitStrategy {
     ```
     This function will panic - you can't set two maximums. 
     ```should_panic
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
-    # use ui_utils::grid::*;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
+    # use grid_ui::grid::*;
     # fn main() -> Result<(), ()>{
     let cannot_set_both_x_and_y = SplitStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
     # Ok(())
@@ -185,9 +185,9 @@ impl SplitStrategy {
     # Examples
     Applying a grid with a maximum x value
     ``` rust
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
-    # use ui_utils::grid::*;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
+    # use grid_ui::grid::*;
     # fn main() -> Result<(), ()>{
     let mut grid = Frame::new(0, 0, 10, 10).next_frame();
     let chunk = grid.split(&SplitStrategy::new().max_y(5, Alignment::Minus));
@@ -199,9 +199,9 @@ impl SplitStrategy {
     ```
     This function will panic - you can't set two maximums. 
     ```should_panic
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
-    # use ui_utils::grid::*;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
+    # use grid_ui::grid::*;
     # fn main() -> Result<(), ()>{
     let cannot_set_both_x_and_y = SplitStrategy::new().max_x(2, Alignment::Minus).max_y(1, Alignment::Plus);
     # Ok(())
@@ -221,9 +221,9 @@ impl SplitStrategy {
     no strategy will be returned.
     # Examples
     ``` rust
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
-    # use ui_utils::grid::*;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
+    # use grid_ui::grid::*;
     # fn main() -> Result<(), ()>{
     let mut grid = Frame::new(0, 0, 10, 10).next_frame();
     let chunk = grid.split(&SplitStrategy::new().min_x(15));
@@ -243,9 +243,9 @@ impl SplitStrategy {
     no strategy will be returned.
     # Examples
     ``` rust
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
-    # use ui_utils::grid::*;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
+    # use grid_ui::grid::*;
     # fn main() -> Result<(), ()>{
     let mut grid = Frame::new(0, 0, 10, 10).next_frame();
     let chunk = grid.split(&SplitStrategy::new().min_y(15));
@@ -347,9 +347,9 @@ impl Grid {
     Returns None if no new grid can be created - either because the grid is already empty or because it's below the minimum size.
     # Examples
     ``` rust
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
-    # use ui_utils::grid::*;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
+    # use grid_ui::grid::*;
     # fn main() -> Result<(), ()>{
     let mut grid = Frame::new(0, 0, 10, 10).next_frame();
     let second = grid.split(&SplitStrategy::new().max_y(5, Alignment::Minus));
@@ -375,9 +375,9 @@ impl Grid {
     If the two grids are incompatible, it returns an error and gives the grid back. 
     # Example
     ``` rust
-    # use ui_utils::grid;
-    # use ui_utils::out;
-    # use ui_utils::trim::Ignore;
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 10).next_frame();
     let mut second_grid = grid.split(&grid::SplitStrategy::new().max_y(5, grid::Alignment::Plus)).ok_or(())?;
@@ -418,9 +418,9 @@ impl Grid {
     Converts the grid into a DrawProcess. The draw process can then be used to draw onto the terminal.
     # Examples
     ``` rust
-    # use ui_utils::out;
-    # use ui_utils::trim::Truncate;
-    # use ui_utils::grid::*;
+    # use grid_ui::out;
+    # use grid_ui::trim::Truncate;
+    # use grid_ui::grid::*;
     # fn main() -> Result<(), ()>{
     let mut grid = Frame::new(0, 0, 10, 10).next_frame();
     let mut process = grid.into_process(DividerStrategy::End);

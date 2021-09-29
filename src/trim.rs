@@ -12,10 +12,10 @@ use crate::{grid::Alignment, process::DrawProcess};
 /// Currently, there's only one variant of this error, indicating a lack of space.
 /// # Examples  
 /// ``` rust
-/// # use ui_utils::grid;
-/// # use ui_utils::out;
-/// # use ui_utils::trim::Ignore;
-/// # use ui_utils::trim::FormatError;
+/// # use grid_ui::grid;
+/// # use grid_ui::out;
+/// # use grid_ui::trim::Ignore;
+/// # use grid_ui::trim::FormatError;
 /// # fn main() -> Result<(), ()>{
 /// let mut grid = grid::Frame::new(0, 0, 10, 1).next_frame(); // creates a grid with one line
 /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -86,11 +86,11 @@ where
 /// Bad formatting is what this crate is designed to prevent.
 /// # Example
 /// ``` rust
-/// # use ui_utils::grid;
-/// # use ui_utils::out;
-/// # use ui_utils::trim::Ignore;
-/// # use ui_utils::trim::TrimStrategy;
-/// # use ui_utils::trim::TrimmedText;
+/// # use grid_ui::grid;
+/// # use grid_ui::out;
+/// # use grid_ui::trim::Ignore;
+/// # use grid_ui::trim::TrimStrategy;
+/// # use grid_ui::trim::TrimmedText;
 /// # fn main() -> Result<(), ()>{
 /// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
 /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -124,11 +124,11 @@ impl TrimStrategy for Ignore {
 /// It also adds blank space to any short lines to make sure every bit of blank space is refreshed.
 /// # Example
 /// ``` rust
-/// # use ui_utils::grid;
-/// # use ui_utils::out;
-/// # use ui_utils::trim::Truncate;
-/// # use ui_utils::trim::TrimStrategy;
-/// # use ui_utils::trim::TrimmedText;
+/// # use grid_ui::grid;
+/// # use grid_ui::out;
+/// # use grid_ui::trim::Truncate;
+/// # use grid_ui::trim::TrimStrategy;
+/// # use grid_ui::trim::TrimmedText;
 /// # fn main() -> Result<(), ()>{
 /// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
 /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
@@ -165,11 +165,11 @@ impl TrimStrategy for Truncate {
 /// Panics if printing to a grid of 0 width.
 /// # Example
 /// ``` rust
-/// # use ui_utils::grid;
-/// # use ui_utils::out;
-/// # use ui_utils::trim::Split;
-/// # use ui_utils::trim::TrimStrategy;
-/// # use ui_utils::trim::TrimmedText;
+/// # use grid_ui::grid;
+/// # use grid_ui::out;
+/// # use grid_ui::trim::Split;
+/// # use grid_ui::trim::TrimStrategy;
+/// # use grid_ui::trim::TrimmedText;
 /// # fn main() -> Result<(), ()>{
 /// let mut grid = grid::Frame::new(0, 0, 10, 3).next_frame();
 /// let mut process = grid.into_process(grid::DividerStrategy::Beginning);
