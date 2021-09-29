@@ -5,9 +5,9 @@ use std::{
 
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::{Alignment, DrawProcess};
+use crate::{grid::Alignment, process::DrawProcess};
 
-/// Represents a formatting problem. Gives your string back.
+/// Represents a formatting problem. Contains the original inputted string, restored as close to its original glory as possible. 
 /// Note that some of the information in the string may be lost.
 /// Currently, there's only one variant of this error, indicating a lack of space.
 /// # Examples  
@@ -42,7 +42,8 @@ impl<T: TrimStrategy> Display for FormatError<T> {
 }
 impl<T: TrimStrategy> Error for FormatError<T> {}
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Hash)]
 /// Trimmed text is text that is marked as processed and displayable.
 /// It is only public so that users can create TrimStrategy objects other than the 3 provided.
 /// It is not meant to be manually be created by anything other than a TrimStrategy.

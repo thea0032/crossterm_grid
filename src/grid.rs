@@ -114,7 +114,7 @@ pub struct SplitStrategy {
 }
 impl SplitStrategy {
     /**
-    Creates an empty grid strategy. Empty grid strategies will simply take up the entire grid.
+    Creates an empty split strategy. Empty strategies will simply take up the entire grid when used. 
     # Examples
     The default grid:
     ``` rust
@@ -137,9 +137,11 @@ impl SplitStrategy {
         }
     }
     /**
-    Sets a maximum X value. The resulting grid data will only be of length v.
+    Sets a maximum X value. The resulting grid will only be at most of length v.
     It'll be either on the left or the right, depending on the alignment (left = minus).
+    # Panics
     Only one maximum direction can be set. Otherwise, this function will panic.
+    This is intended. 
     # Examples
     Applying a grid with a maximum x value
     ``` rust
@@ -155,7 +157,7 @@ impl SplitStrategy {
     # Ok(())
     # }
     ```
-    Cannot set both max x and max y
+    This function will panic - you can't set two maximums. 
     ```should_panic
     # use ui_utils::out;
     # use ui_utils::trim::Ignore;
@@ -177,7 +179,9 @@ impl SplitStrategy {
     /**
     Sets a maximum Y value. The resulting grid data will only be of height v.
     It'll be either on the top or the bottom, depending on the alignment (top = minus).
+    # Panics
     Only one maximum direction can be set. Otherwise, this function will panic.
+    This is intended. 
     # Examples
     Applying a grid with a maximum x value
     ``` rust
@@ -193,7 +197,7 @@ impl SplitStrategy {
     # Ok(())
     # }
     ```
-    Cannot set both max x and max y
+    This function will panic - you can't set two maximums. 
     ```should_panic
     # use ui_utils::out;
     # use ui_utils::trim::Ignore;
@@ -364,6 +368,51 @@ impl Grid {
     */
     pub fn split(&mut self, strategy: &SplitStrategy) -> Option<Grid> {
         strategy.apply(self)
+    }
+    /**
+    Extends the grid in the either direction, either positive or negative, if the input is compatible
+    (ie grids are next to each other and of similar dimensions)
+    If the two grids are incompatible, it returns an error and gives the grid back. 
+    # Example
+    ``` rust
+    # use ui_utils::grid;
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # fn main() -> Result<(), ()>{
+    let mut grid = grid::Frame::new(0, 0, 10, 10).next_frame();
+    let mut second_grid = grid.split(&grid::SplitStrategy::new().max_y(5, grid::Alignment::Plus)).ok_or(())?;
+    assert_eq!(grid.end_y, 5);
+    assert!(grid.extend(second_grid).is_ok());
+    assert_eq!(grid.end_y, 10);
+    let incompatible_grid = grid::Frame::new(4, 4, 8, 8).next_frame();
+    assert!(grid.extend(incompatible_grid).is_err());
+    # Ok(())
+    # }
+    ```
+    */
+    
+    pub fn extend(&mut self, grid: Grid) -> Result<(), Grid> {
+        if self.start_x == grid.start_x && self.end_x == grid.end_x {
+            if self.end_y == grid.start_y {
+                self.end_y = grid.end_y;
+                return Ok(())
+            }
+            if self.start_y == grid.end_y {
+                self.start_y = grid.start_y;
+                return Ok(())
+            }
+        }
+        if self.start_y == grid.start_y && self.end_y == grid.end_y {
+            if self.end_x == grid.start_x {
+                self.end_x = grid.end_x;
+                return Ok(())
+            }
+            if self.start_x == grid.end_x {
+                self.start_x = grid.start_x;
+                return Ok(())
+            }
+        }
+        Err(grid)
     }
     /**
     Converts the grid into a DrawProcess. The draw process can then be used to draw onto the terminal.

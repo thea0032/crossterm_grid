@@ -21,10 +21,11 @@ This simple trait is rather self-explanatory.
 # fn main() -> Result<(), ()>{
 let mut grid = grid::Frame::new(0, 0, 10, 4).next_frame();
 let mut process = grid.into_process(grid::DividerStrategy::Halfway);
-let mut some_handler = Ignore;
-process.add_to_section("Some stuff".to_string(), &mut some_handler, grid::Alignment::Plus);
-// The handler can be re-used.
-process.add_to_section("More stuff".to_string(), &mut some_handler, grid::Alignment::Plus);
+process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+let mut some_handler = out::OutToString;
+let mut output_device = String::new();
+process.print(&mut some_handler, &mut output_device)?;
+assert_eq!(output_device, "          \n          \nSome stuff\n          \n".to_string());
 # Ok(())
 # }
 ```
@@ -34,6 +35,25 @@ pub trait Handler {
     type Error;
     fn handle(&mut self, out: &mut Self::OutputDevice, input: &Action) -> Result<(), Self::Error>;
 }
+/**
+A handler that is "safe", ie doesn't return an error. All safe handlers are also handlers - you can use them as such. 
+# Example
+``` rust
+# use ui_utils::grid;
+# use ui_utils::out;
+# use ui_utils::trim::Ignore;
+# fn main() -> Result<(), ()>{
+let mut grid = grid::Frame::new(0, 0, 10, 4).next_frame();
+let mut process = grid.into_process(grid::DividerStrategy::Halfway);
+process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+let mut some_handler = out::OutToString;
+let mut output_device = String::new();
+process.print_safe(&mut some_handler, &mut output_device); // no need for the ? operator
+assert_eq!(output_device, "          \n          \nSome stuff\n          \n".to_string());
+# Ok(())
+# }
+```
+*/
 pub trait SafeHandler {
     type OutputDevice;
     fn safe_handle(&mut self, out: &mut Self::OutputDevice, input: &Action);
@@ -162,6 +182,7 @@ process.print(&mut small_output, &mut ())?; // panics
 ```
 
 */
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StringBuffer {
     pub contents: Vec<Vec<String>>,
@@ -170,8 +191,9 @@ pub struct StringBuffer {
     current_x: usize,
     current_y: usize,
 }
+
 impl StringBuffer {
-    /// Creates as new StringBuffer.
+    /// Creates a new StringBuffer from 4 dimensions. 
     pub fn new(min_x: usize, min_y: usize, max_x: usize, max_y: usize) -> StringBuffer {
         StringBuffer {
             contents: vec![vec![" ".to_string(); max_x - min_x]; max_y - min_y],
@@ -181,7 +203,7 @@ impl StringBuffer {
             offset_y: min_y,
         }
     }
-    /// Creates a new StringBuffer with the same dimensions as the frame used.
+    /// Creates a new StringBuffer with the same dimensions as the frame inputted. 
     pub fn from_frame(f: &Frame) -> StringBuffer {
         let g = f.next_frame();
         StringBuffer::new(g.start_x, g.start_y, g.end_x, g.end_y)
@@ -195,8 +217,8 @@ impl StringBuffer {
             println!();
         }
     }
-    /// Returns the StringBuffer lines.
-    pub fn display(self) -> Vec<String> {
+    /// Returns the StringBuffer lines, collected into strings (instead of each grapheme being individually displayed)
+    pub fn lines(self) -> Vec<String> {
         self.contents.into_iter().map(|x| x.into_iter().collect::<String>()).collect::<Vec<_>>()
     }
 }
@@ -211,8 +233,8 @@ impl SafeHandler for StringBuffer {
                 }
             }
             Action::MoveTo(x, y) => {
-                self.current_x = *x + self.offset_x;
-                self.current_y = *y + self.offset_y;
+                self.current_x = *x - self.offset_x;
+                self.current_y = *y - self.offset_y;
             }
         }
     }

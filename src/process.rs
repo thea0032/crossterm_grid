@@ -1,10 +1,7 @@
-use crate::{
-    grid::{Alignment, DividerStrategy},
-    out::{Action, Handler, SafeHandler},
-    trim::TrimmedText,
-    FormatError, Grid, TrimStrategy,
-};
+use crate::{grid::{Grid, Alignment, DividerStrategy}, out::{Action, Handler, SafeHandler}, trim::{TrimmedText, FormatError, TrimStrategy}};
 
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum InternalFormatError {
     NoSpace(TrimmedText),
 }
@@ -268,7 +265,6 @@ impl DrawProcess {
     # use ui_utils::trim::Ignore;
     # fn main() -> Result<(), ()>{
     let mut grid = grid::Frame::new(0, 0, 10, 1).next_frame(); // creates a grid with one line
-    let chunk = grid.split(&grid::SplitStrategy::new()).ok_or(())?;
     let mut process = grid.into_process(grid::DividerStrategy::Beginning);
     process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
     assert!(process.add_to_section("No more".to_string(), &mut Ignore, grid::Alignment::Plus).is_err());
@@ -314,6 +310,114 @@ impl DrawProcess {
                 Err(FormatError::NoSpace(strategy.back(extras, &self, section)))
             }
         }
+    }
+    /**
+    Gives up free space in the Y direction, producing a grid if there's free space to give up. 
+    Will take up to max_taken lines of space. If max_taken is set to None, it will take up to the divider line. 
+    Will leave at least min_left lines TOTAL (in either direction). Might leave some blank lines. 
+    Returns this space in a grid if there is any. If the process is already full, nothing will be returned. 
+    # Example
+    ``` rust
+    # use ui_utils::grid;
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # fn main() -> Result<(), ()>{
+    let mut grid = grid::Frame::new(0, 0, 10, 10).next_frame();
+    let mut process = grid.into_process(grid::DividerStrategy::Beginning);
+    process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+    assert_eq!(process.split_free_space(grid::Alignment::Plus, None, None), Some(grid::Grid{start_x: 0, start_y: 1, end_x: 10, end_y: 10}));
+    assert_eq!(process.end_y(), 1);
+    # Ok(())
+    # }
+    ```
+    */
+    pub fn split_free_space(&mut self, a: Alignment, min_left: Option<usize>, max_taken: Option<usize>) -> Option<Grid> {
+        match a {
+            Alignment::Minus => {
+                let space = self.divider;
+                let mut space_occupied = self.minus.len();
+                if let Some(val) = min_left {
+                    space_occupied = space_occupied.max(val);
+                }
+                let mut total_space = space.checked_sub(space_occupied).unwrap_or(0);
+                if let Some(val) = max_taken {
+                    total_space = total_space.min(val);
+                }
+                if total_space != 0 {
+                    self.start_y += total_space;
+                    Some(Grid {
+                        start_x: self.start_x,
+                        start_y: self.start_y - total_space,
+                        end_x: self.end_x,
+                        end_y: self.end_y - total_space,
+                    })
+                } else {
+                    None
+                }
+            },
+            Alignment::Plus => {
+                println!("END: {} START: {} DIVIDE: {}", self.end_y, self.start_y, self.divider);
+                let space = self.end_y - self.start_y - self.divider;
+                println!("SPACE: {}", space);
+                let mut space_occupied = self.plus.len();
+                println!("OCCUPIED: {}", space_occupied);
+                if let Some(val) = min_left {
+                    space_occupied = space_occupied.max(val);
+                }
+                let mut total_space = space.checked_sub(space_occupied).unwrap_or(0);
+                println!("TOTAL: {}", total_space);
+                if let Some(val) = max_taken {
+                    total_space = total_space.min(val);
+                }
+                if total_space != 0 {
+                    self.end_y -= total_space;
+                    Some(Grid {
+                        start_x: self.start_x,
+                        start_y: self.end_y,
+                        end_x: self.end_x,
+                        end_y: self.end_y + total_space,
+                    })
+                } else {
+                    None
+                }
+            },
+        }
+    }
+    /**
+    Extends the grid in the either direction, either positive or negative, if the input is compatible
+    (ie grids are next to each other and of similar dimensions)
+    If the two grids are incompatible, it returns an error and gives the grid back. 
+    # Example
+    ``` rust
+    # use ui_utils::grid;
+    # use ui_utils::out;
+    # use ui_utils::trim::Ignore;
+    # fn main() -> Result<(), ()>{
+    let mut grid = grid::Frame::new(0, 0, 10, 10).next_frame();
+    let mut process = grid.into_process(grid::DividerStrategy::Beginning);
+    process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+    let free_space = process.split_free_space(grid::Alignment::Plus, None, None).ok_or(())?;
+    assert_eq!(process.end_y(), 1);
+    assert!(process.extend(free_space).is_ok());
+    assert_eq!(process.end_y(), 10);
+    let incompatible_grid = grid::Frame::new(4, 4, 8, 8).next_frame();
+    assert!(process.extend(incompatible_grid).is_err());
+    # Ok(())
+    # }
+    ```
+    */
+    pub fn extend(&mut self, grid: Grid) -> Result<(), Grid> {
+        if self.start_x == grid.start_x && self.end_x == grid.end_x {
+            if self.end_y == grid.start_y {
+                self.end_y = grid.end_y;
+                return Ok(())
+            }
+            if self.start_y == grid.end_y {
+                self.start_y = grid.start_y;
+                return Ok(())
+            }
+        }
+        Err(grid)
     }
     #[doc(hidden)]
     /// Adds trimmed text to a section.
@@ -374,8 +478,8 @@ impl DrawProcess {
     fn grab_actions(&mut self) -> Vec<Action> {
         let mut result = Vec::new();
         let start_x = self.start_x;
-        let start_y = self.divider - self.minus.len();
-        let divider = self.divider;
+        let start_y = self.start_y + self.divider - self.minus.len();
+        let divider = self.start_y + self.divider;
         // Adds blank lines, making sure that the entirety of grid is clear.
         for i in self.start_y..start_y {
             result.push(Action::MoveTo(start_x, i));
