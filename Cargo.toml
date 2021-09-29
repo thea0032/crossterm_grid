@@ -9,7 +9,6 @@ description = "A Rust library for building a terminal-based UI with multiple ele
 repository = "https://github.com/thea0032/grid_ui"
 readme = "README.md"
 license = "MIT"
-documentation = "TBA"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
