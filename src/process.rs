@@ -271,7 +271,7 @@ impl DrawProcess {
     # Ok(())
     # }
     ```
-    Plan your divider strategy
+    Divider strategies can determine where you have space in which section.
     ``` rust
     # use grid_ui::grid;
     # use grid_ui::out;
@@ -311,6 +311,32 @@ impl DrawProcess {
             }
         }
     }
+    /**
+    Clears the process, allowing it to be re-used. 
+    # Example
+    ``` rust
+    # use grid_ui::grid;
+    # use grid_ui::out;
+    # use grid_ui::trim::Ignore;
+    # fn main() -> Result<(), ()>{
+    let mut grid = grid::Frame::new(0, 0, 10, 1).next_frame(); // creates a grid with one line
+    let mut process = grid.into_process(grid::DividerStrategy::Beginning);
+    process.add_to_section("Some stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
+    assert!(process.add_to_section("No more".to_string(), &mut Ignore, grid::Alignment::Plus).is_err());
+    process.clear(grid::DividerStrategy::Beginning);
+    assert!(process.add_to_section("Some more".to_string(), &mut Ignore, grid::Alignment::Plus).is_ok());
+    # Ok(())
+    # }
+    ```
+    */
+    pub fn clear(&mut self, new_strategy: DividerStrategy) {
+        *self = DrawProcess::new(Grid {
+            start_x: self.start_x,
+            start_y: self.start_y,
+            end_x: self.end_x,
+            end_y: self.end_y
+        }, new_strategy);
+    } 
     /**
     Gives up free space in the Y direction, producing a grid if there's free space to give up. 
     Will take up to max_taken lines of space. If max_taken is set to None, it will take up to the divider line. 

@@ -146,7 +146,7 @@ left_process.add_to_section("Some".to_string(), &mut Ignore, grid::Alignment::Pl
 right_process.add_to_section("stuff".to_string(), &mut Ignore, grid::Alignment::Plus);
 left_process.print(&mut output, &mut ())?;
 right_process.print(&mut output, &mut ())?;
-assert_eq!(vec!["Some stuff".to_string()], output.display());
+assert_eq!(vec!["Some stuff".to_string()], output.lines());
 # Ok(())
 # }
 ```
